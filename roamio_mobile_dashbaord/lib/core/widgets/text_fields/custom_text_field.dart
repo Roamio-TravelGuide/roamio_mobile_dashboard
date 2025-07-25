@@ -7,6 +7,7 @@ class CustomTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final Widget? suffixIcon;
   final bool obscureText;
+  final TextInputType? keyboardType; 
 
   // 2. Proper constructor with required/optional params
   const CustomTextField({
@@ -16,6 +17,8 @@ class CustomTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.obscureText = false,
+    this.keyboardType,
+
   });
 
   // 3. Complete build method with all UI elements

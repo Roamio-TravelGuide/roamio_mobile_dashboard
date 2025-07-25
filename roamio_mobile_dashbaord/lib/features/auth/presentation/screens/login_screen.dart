@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/buttons/primary_button.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -97,6 +98,42 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _handleLogin,
               ),
               const SizedBox(height: 24),
+
+              // Sign Up Prompt
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SignUpScreen(),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Sign Up',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -105,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    // Implement your login logic here
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -115,9 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-
-    // Call your authentication provider
-    // context.read<AuthProvider>().login(email, password);
+    // Authentication logic
   }
 
   @override
