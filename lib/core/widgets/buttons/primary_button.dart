@@ -9,7 +9,7 @@ class PrimaryButton extends StatelessWidget {
     super.key,
     required this.text,
     required this.onPressed,
-    this.isLoading = false,
+    this.isLoading = false, required MaterialColor color, required ButtonStyle style,
   });
 
   @override
