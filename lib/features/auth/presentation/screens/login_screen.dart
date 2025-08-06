@@ -12,16 +12,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(
-    text: 'daviddasilva@gmail.com',
-  );
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Color(0xFF0D0D12), // Add 0xFF prefix for opacity (fully opaque)
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -49,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Email Field
               Text(
                 'Email or Phone Number',
-                style: Theme.of(context).textTheme.labelLarge,
+                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               CustomTextField(
@@ -57,16 +55,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // Password Field
-              Text('Password', style: Theme.of(context).textTheme.labelLarge),
+              Text('Password', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _passwordController,
                 hintText: 'Enter your password',
                 prefixIcon: Icons.lock_outline,
                 obscureText: _obscurePassword,
+                
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -88,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     // Add navigation to forgot password screen
                   },
-                  child: const Text('Forgot Password?'),
+                  child: const Text('Forgot Password?',style: TextStyle(color: Colors.blue),),
                 ),
               ),
               const SizedBox(height: 32),
@@ -101,14 +100,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _handleLogin,
                   color: Colors.white,
                   textColor: Colors.black,
-                  child: Text("Login"),
+                  child: Text("Login",style: TextStyle(),),
                   shape: RoundedRectangleBorder(
                     // For rounded corners
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
               // Sign Up Prompt
               Center(
@@ -137,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Sign Up',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:Colors.blue,
+                          color: Colors.blue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
