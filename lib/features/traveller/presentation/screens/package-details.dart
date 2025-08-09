@@ -111,7 +111,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
           SliverPadding(
             padding: EdgeInsets.only(
               top: 16,
-              bottom: bottomInset + 160, // space for CTA + nav
+              bottom: 16, // space for CTA + nav
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate(
