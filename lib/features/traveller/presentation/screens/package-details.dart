@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './package_checkout.dart';
 
 void main() {
   runApp(const TravelApp());
@@ -203,9 +204,21 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Starting your trip...')),
-                    );
+                   Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => CheckoutPage(
+        title: 'Tanah Lot Temple',
+        location: 'Bali, Indonesia',
+        rating: 4.5,
+        imageUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
+        people: 4,
+        bookingDate: DateTime(2024, 6, 20),
+        price: 200.0,
+        fee: 5.0,
+        paymentEmail: 'daviddasilva@gmail.com',
+      ),
+    ),
+  );
                   },
                   child: const Text('Start a Trip'),
                 ),
