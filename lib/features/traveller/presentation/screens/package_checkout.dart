@@ -1,324 +1,484 @@
 import 'package:flutter/material.dart';
+import 'mytrip.dart';
 
-class CheckoutPage extends StatelessWidget {
-  final String title;
-  final String location;
-  final double rating;
-  final String imageUrl;
+class CheckoutScreen extends StatefulWidget {
+  final String tourType; // 'full' or 'custom'
+  
+  const CheckoutScreen({
+    Key? key,
+    required this.tourType,
+  }) : super(key: key);
 
-  final int people;
-  final DateTime bookingDate;
+  @override
+  _CheckoutScreenState createState() => _CheckoutScreenState();
+}
 
-  final double price;
-  final double fee;
-
-  final String paymentMethodName;
-  final String paymentEmail;
-
-  const CheckoutPage({
-    super.key,
-    required this.title,
-    required this.location,
-    required this.rating,
-    required this.imageUrl,
-    required this.people,
-    required this.bookingDate,
-    required this.price,
-    required this.fee,
-    this.paymentMethodName = 'PayPal',
-    required this.paymentEmail,
-  });
-
-  double get total => price + fee;
-
-  String _formatDate(DateTime d) {
-    const months = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December'
-    ];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
-    // Matches "June 20, 2024" style without extra packages.
-  }
-
-  String _money(num v) => '\$${v.toStringAsFixed(2)}';
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  String selectedPaymentMethod = 'paypal';
 
   @override
   Widget build(BuildContext context) {
-    final bg = Theme.of(context).scaffoldBackgroundColor;
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0A0A0A),
         elevation: 0,
-        centerTitle: true,
-        title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.w700)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Checkout',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {},
           ),
         ],
-        backgroundColor: bg,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      body: Column(
         children: [
-          // Main card
-          _CardContainer(
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Destination Card
+                  _buildDestinationCard(),
+                  const SizedBox(height: 24),
+                  
+                  // Content based on tour type
+                  if (widget.tourType == 'full') 
+                    _buildFullTourContent()
+                  else 
+                    _buildCustomTourContent(),
+                ],
+              ),
+            ),
+          ),
+          
+          // Pay Now Button
+          _buildPayNowButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDestinationCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop',
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey.shade700,
+                child: const Icon(Icons.image, color: Colors.white54),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Destination summary
+                const Text(
+                  'Ella',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageUrl,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(width: 64, height: 64, color: Colors.grey.shade700),
-                      ),
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.blue,
+                      size: 16,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              )),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 16, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  location,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$rating Rating',
-                                style: const TextStyle(fontSize: 12, color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                        ],
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Badulla,uva',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const _SectionLabel('Your Vacation'),
-                const SizedBox(height: 8),
-                _InfoRow(label: 'Person', value: '$people'),
-                _Divider(),
-                _InfoRow(label: 'Date Booking', value: _formatDate(bookingDate)),
-                const SizedBox(height: 16),
-                const _SectionLabel('Price Details'),
-                const SizedBox(height: 8),
-                _InfoRow(label: 'Price', value: _money(price)),
-                _Divider(),
-                _InfoRow(label: 'Fee', value: _money(fee)),
-                _Divider(),
-                _InfoRow(
-                  label: 'Total',
-                  value: _money(total),
-                  isEmphasis: true,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      '4.5 Rating',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const _SectionLabel('Payment Method'),
-          const SizedBox(height: 8),
-          _PaymentMethodTile(
-            name: paymentMethodName,
-            email: paymentEmail,
-            onTap: () {},
-          ),
-          const SizedBox(height: 80),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: SizedBox(
-            height: 52,
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Payment flow not implemented')),
-                );
-              },
-              child: const Text('Pay Now'),
+    );
+  }
+
+  Widget _buildFullTourContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Payment Amount
+        Text(
+          'Payment Amount : 0',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Choose your tour section
+        Text(
+          'Choose your tour',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Tour locations
+        ...List.generate(3, (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildTourLocationCard(),
+        )),
+      ],
+    );
+  }
+
+  Widget _buildCustomTourContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Payment Amount
+        Text(
+          'Payment Amount : \$5',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Payment Method section
+        Text(
+          'Payment Method',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // PayPal option
+        _buildPaymentMethodCard(),
+      ],
+    );
+  }
+
+  Widget _buildTourLocationCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tanah Lot Temple',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                
+                // Action buttons
+                Row(
+                  children: [
+                    _buildActionButton(Icons.play_arrow, 'Play audio'),
+                    const SizedBox(width: 16),
+                    _buildActionButton(Icons.directions, 'Show directions'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Description
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.3,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text: 'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stegggg ggggg hhhhhhhh ',
+                      ),
+                      TextSpan(
+                        text: 'Read more....',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=60&h=60&fit=crop',
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey.shade700,
+                child: const Icon(Icons.image, color: Colors.white54),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Checkbox
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white54),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Icon(
+              Icons.check,
+              color: Colors.white54,
+              size: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.blue, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.blue,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethodCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // PayPal icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.payment,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PayPal',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'daviddasilva@gmail.com',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white54,
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPayNowButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            // Handle payment logic
+            _processPayment();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            'Pay Now',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ),
     );
   }
-}
 
-class _CardContainer extends StatelessWidget {
-  final Widget child;
-  const _CardContainer({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF141B2E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      padding: const EdgeInsets.all(14),
-      child: child,
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
+  void _processPayment() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Payment Successful!',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: 14,
-      thickness: 1,
-      color: Colors.white.withOpacity(0.06),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isEmphasis;
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.isEmphasis = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Colors.white70,
-        );
-    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: isEmphasis ? FontWeight.w800 : FontWeight.w600,
-        );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: labelStyle)),
-          Text(value, style: valueStyle),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaymentMethodTile extends StatelessWidget {
-  final String name;
-  final String email;
-  final VoidCallback onTap;
-
-  const _PaymentMethodTile({
-    required this.name,
-    required this.email,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF141B2E),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // Simple "P" avatar to mimic PayPal branding feel
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1F5BFF),
-                  borderRadius: BorderRadius.circular(10),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          widget.tourType == 'full' 
+            ? 'Your full tour has been purchased successfully!'
+            : 'Your custom tour has been purchased successfully!',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Center(
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => MyTripScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                alignment: Alignment.center,
                 child: const Text(
-                  'P',
+                  'OK',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                        )),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
