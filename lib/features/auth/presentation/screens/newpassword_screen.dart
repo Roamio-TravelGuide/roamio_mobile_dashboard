@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
-import 'forgotpassword_screen.dart';
-import 'signup_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class NewPasswordScreen extends StatefulWidget {
+  final String email;
+
+  const NewPasswordScreen({super.key, required this.email});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<NewPasswordScreen> createState() => _NewPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'daviddasilva@gmail.com');
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+class _NewPasswordScreenState extends State<NewPasswordScreen> {
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   final Color _inputColor = const Color(0xFF818898);
   final Color _buttonColor = const Color(0xFF0F77EE); // New button color
 
-  Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  Future<void> _handlePasswordReset() async {
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
       _showError('Please fill all fields');
+      return;
+    }
+    if (newPassword != confirmPassword) {
+      _showError('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      _showError('Password must be at least 6 characters');
       return;
     }
 
@@ -30,10 +40,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
-      // On successful login, navigate to home screen
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password updated successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      _navigateToLogin();
     } catch (e) {
-      _showError('Login failed: ${e.toString()}');
+      if (!mounted) return;
+      _showError('Error: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -41,7 +64,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _navigateToLogin() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -49,15 +84,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
               Text(
-                'Welcome Back',
+                'New Password',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -65,111 +108,99 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Sign in to continue your journey',
+                'Create a strong new password',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
               ),
               const SizedBox(height: 40),
 
-              // Email Field
+              // New Password Field
               Text(
-                'Email',
+                'New Password',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Colors.white,
                     ),
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _emailController,
+                controller: _newPasswordController,
+                obscureText: _obscureNewPassword,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Enter your email',
+                  hintText: 'Enter new password',
                   hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.email_outlined, color: _inputColor),
+                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
                   filled: true,
                   fillColor: _inputColor.withOpacity(0.2),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                      color: _inputColor,
+                    ),
+                    onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Password Field
+              // Confirm Password Field
               Text(
-                'Password',
+                'Confirm Password',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Colors.white,
                     ),
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Enter your password',
+                  hintText: 'Re-enter new password',
                   hintStyle: TextStyle(color: _inputColor),
                   prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: _inputColor,
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
                   filled: true,
                   fillColor: _inputColor.withOpacity(0.2),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Forgot Password Link
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ForgotPasswordScreen(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      color: _inputColor,
                     ),
+                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
-                  child: Text(
-                    'Forgot Password?',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 ),
               ),
               const SizedBox(height: 32),
 
-              // Login Button - Updated color here
+              // Create Password Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
+                  onPressed: _isLoading ? null : _handlePasswordReset,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _buttonColor, // Changed to 0F77EE
-                    foregroundColor: Colors.white, // Changed text color to white
+                    backgroundColor: _buttonColor, // Updated to use the new color
+                    foregroundColor: Colors.white, // Text color changed to white for better contrast
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                    disabledBackgroundColor: _buttonColor.withOpacity(0.5), // Disabled state color
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          'Login',
+                          'Create New Password',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -179,28 +210,28 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Sign Up Prompt
+              // Back to Login Button
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      "successfully create the new password? ",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
                           ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.push(
+                      onPressed: () => Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
+                          builder: (context) => const LoginScreen(),
                         ),
                       ),
                       child: Text(
-                        'Sign Up',
+                        'Login',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.blue,
+                              color: _buttonColor, // Also updated this to use the same color
                               fontWeight: FontWeight.bold,
                             ),
                       ),
@@ -217,8 +248,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }

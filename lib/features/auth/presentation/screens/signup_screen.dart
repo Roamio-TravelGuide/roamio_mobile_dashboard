@@ -1,7 +1,5 @@
-// lib/features/auth/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/buttons/primary_button.dart';
-import '../../../../core/widgets/text_fields/custom_text_field.dart';
+import 'package:flutter/services.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -12,16 +10,21 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  final Color _inputColor = const Color(0xFF818898);
+  final Color _buttonColor = const Color(0xFF0F77EE);
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -29,11 +32,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              // Header
               Text(
                 'Create Account',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
               ),
               const SizedBox(height: 8),
@@ -45,88 +48,195 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 40),
 
-              // Name Field
+              // First Name
               Text(
-                'Full Name',
-                style: Theme.of(context).textTheme.labelLarge,
+                'First Name',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
               ),
               const SizedBox(height: 8),
-              CustomTextField(
-                controller: _nameController,
-                hintText: 'Enter your full name',
-                prefixIcon: Icons.person_outline,
-              ),
-              const SizedBox(height: 24),
-
-              // Email Field
-              Text(
-                'Email',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: _emailController,
-                hintText: 'Enter your email',
-                prefixIcon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 24),
-
-              // Password Field
-              Text(
-                'Password',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              CustomTextField(
-                controller: _passwordController,
-                hintText: 'Enter your password',
-                prefixIcon: Icons.lock_outline,
-                obscureText: _obscurePassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey,
+              TextField(
+                controller: _firstNameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter your first name',
+                  hintStyle: TextStyle(color: _inputColor),
+                  prefixIcon: Icon(Icons.person_outline, color: _inputColor),
+                  filled: true,
+                  fillColor: _inputColor.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 16),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Confirm Password Field
+              // Last Name
               Text(
-                'Confirm Password',
-                style: Theme.of(context).textTheme.labelLarge,
+                'Last Name',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
               ),
               const SizedBox(height: 8),
-              CustomTextField(
-                controller: _confirmPasswordController,
-                hintText: 'Re-enter your password',
-                prefixIcon: Icons.lock_outline,
-                obscureText: _obscureConfirmPassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey,
+              TextField(
+                controller: _lastNameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter your last name',
+                  hintStyle: TextStyle(color: _inputColor),
+                  prefixIcon: Icon(Icons.person_outline, color: _inputColor),
+                  filled: true,
+                  fillColor: _inputColor.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    });
-                  },
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 16),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Email
+              Text(
+                'Email',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _emailController,
+                style: const TextStyle(color: Colors.white),
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: 'Enter your email',
+                  hintStyle: TextStyle(color: _inputColor),
+                  prefixIcon: Icon(Icons.email_outlined, color: _inputColor),
+                  filled: true,
+                  fillColor: _inputColor.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 16),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Password
+              Text(
+                'Password',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passwordController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  hintStyle: TextStyle(color: _inputColor),
+                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: _inputColor,
+                    ),
+                    onPressed: () => setState(
+                        () => _obscurePassword = !_obscurePassword),
+                  ),
+                  filled: true,
+                  fillColor: _inputColor.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 16),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Confirm Password
+              Text(
+                'Confirm Password',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _confirmPasswordController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  hintText: 'Re-enter your password',
+                  hintStyle: TextStyle(color: _inputColor),
+                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: _inputColor,
+                    ),
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
+                  ),
+                  filled: true,
+                  fillColor: _inputColor.withOpacity(0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 16),
                 ),
               ),
               const SizedBox(height: 32),
 
               // Sign Up Button
-              MaterialButton(
-                padding: EdgeInsets.all(40),
-                child: Text('SignUp'),
-                onPressed: _handleSignUp,
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleSignUp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _buttonColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -142,22 +252,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onPressed: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
                       ),
                       child: Text(
                         'Login',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).primaryColor,
+                              color: _buttonColor,
                               fontWeight: FontWeight.bold,
                             ),
                       ),
@@ -173,32 +277,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _handleSignUp() {
-    final name = _nameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      _showError('Please fill all fields');
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      _showError('Passwords do not match');
       return;
     }
 
-    // Call your authentication provider
-    // context.read<AuthProvider>().signUp(name, email, password);
+    setState(() => _isLoading = true);
+    // TODO: Implement sign up logic
+    // After successful signup:
+    // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => _isLoading = false);
+    });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
