@@ -24,7 +24,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Color(0xFF0D0D12),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -35,9 +35,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Text(
                 'Create Account',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -77,10 +77,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               // Last Name
               Text(
-                'Last Name',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
+                'Full Name',
+                style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -105,9 +103,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               // Email
               Text(
                 'Email',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
+                style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -133,9 +129,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               // Password
               Text(
                 'Password',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
+                style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -171,9 +165,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               // Confirm Password
               Text(
                 'Confirm Password',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
+                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -208,37 +200,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               // Sign Up Button
               SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSignUp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _buttonColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 0,
+                width: double.infinity, // Takes full available width
+                height: 40, // Fixed height
+                child: MaterialButton(
+                  onPressed: _handleSignUp,
+                  color: Colors.white,
+                  textColor: Colors.black,
+                  child: Text("SignUp",style: TextStyle(),),
+                  shape: RoundedRectangleBorder(
+                    // For rounded corners
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
               // Login Prompt
               Center(
@@ -261,9 +236,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Text(
                         'Login',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: _buttonColor,
+                              color: Colors.blue,
                               fontWeight: FontWeight.bold,
-                            ),
+                        ),
                       ),
                     ),
                   ],

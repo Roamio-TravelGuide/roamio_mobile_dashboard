@@ -10,7 +10,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'daviddasilva@gmail.com');
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Color(0xFF0D0D12), // Add 0xFF prefix for opacity (fully opaque)
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -75,59 +75,35 @@ class _LoginScreenState extends State<LoginScreen> {
               // Email Field
               Text(
                 'Email',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                 style: TextStyle(color: Colors.white)?.copyWith(
                       color: Colors.white,
                     ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.email_outlined, color: _inputColor),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                ),
+                hintText: 'Enter your email',
+                prefixIcon: Icons.email_outlined,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // Password Field
-              Text(
-                'Password',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
-              ),
+              Text('Password', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter your password',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: _inputColor,
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
                   ),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 8),
@@ -136,48 +112,30 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ForgotPasswordScreen(),
-                    ),
-                  ),
-                  child: Text(
-                    'Forgot Password?',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
+                  onPressed: () {
+                    // Add navigation to forgot password screen
+                  },
+                  child: const Text('Forgot Password?',style: TextStyle(color: Colors.blue),),
                 ),
               ),
               const SizedBox(height: 32),
 
               // Login Button - Updated color here
               SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _buttonColor, // Changed to 0F77EE
-                    foregroundColor: Colors.white, // Changed text color to white
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                width: double.infinity, // Takes full available width
+                height: 40, // Fixed height
+                child: MaterialButton(
+                  onPressed: _handleLogin,
+                  color: Colors.white,
+                  textColor: Colors.black,
+                  child: Text("Login",style: TextStyle(),),
+                  shape: RoundedRectangleBorder(
+                    // For rounded corners
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
               // Sign Up Prompt
               Center(
@@ -200,9 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Sign Up',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
