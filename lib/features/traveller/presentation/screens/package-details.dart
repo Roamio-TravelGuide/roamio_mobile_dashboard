@@ -18,9 +18,9 @@ class TravelApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
          colorScheme: const ColorScheme.dark(
-         primary: Color(0xFF0F77EE), // Exact color
+         primary: Color.fromARGB(255, 34, 127, 233), // Exact color
     //background: Color(0xFF0A1220),
-  ),
+      ),
         scaffoldBackgroundColor: const Color(0xFF0D0D12),
         useMaterial3: true,
       ),
@@ -516,90 +516,106 @@ class _EllaDetailsSection extends StatelessWidget {
               '/5 (Reviews)',
               style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
             ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: const [
-                  Icon(Icons.place, size: 12, color: Colors.white70),
-                  SizedBox(width: 4),
-                  Text(
-                    '137 km',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
+             const SizedBox(width: 6),
+             Text(
+      '•',
+      style: TextStyle(
+        color: Colors.white.withOpacity(0.5),
+        fontSize: 12,
+      ),
+    ),
+     const SizedBox(width: 6),
+    const Icon(Icons.map, size: 12, color: Colors.white70),
+    const SizedBox(width: 4),
+    const Text(
+      '137 km',
+      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+    ),         
+            
           ],
         ),
+        
         const SizedBox(height: 8),
-        // "Show map" row
-        Row(
-          children: [
-            Text(
-              '60 km away from you',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Show map',
-                style: TextStyle(
-                  color: cs.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        // Preview Tour button
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: cs.primary, width: 1),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.play_circle_outline, color: cs.primary, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  'Preview Tour',
-                  style: TextStyle(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+// "Show map" row
+Row(
+  children: [
+    RichText(
+      text: TextSpan(
+        children: [
+          const TextSpan(
+            text: '60 km ',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          TextSpan(
+            text: 'away from you',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    ),
+    const SizedBox(width: 8),
+    GestureDetector(
+      onTap: () {},
+      child: Row(
+        children: [
+          Icon(Icons.subdirectory_arrow_right,
+              color: cs.primary, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            'Show map',
+            style: TextStyle(
+              color: cs.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+    const Spacer(),
+    OutlinedButton(
+      onPressed: () {},
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: cs.primary, width: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.headset, color: cs.primary, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            'Preview Tour',
+            style: TextStyle(
+              color: cs.primary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+),
+
         const SizedBox(height: 10),
         // Description
         RichText(
           text: TextSpan(
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
-              fontSize: 12,
+              fontSize: 13,
               height: 1.4,
             ),
             children: [
@@ -610,8 +626,8 @@ class _EllaDetailsSection extends StatelessWidget {
               TextSpan(
                 text: 'Read more...',
                 style: TextStyle(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w600,
+                  color: Color.fromARGB(255, 212, 216, 224),
+                  fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
               ),
@@ -665,12 +681,12 @@ class _InfoColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white70, size: 20),
+        Icon(icon, color: const Color.fromARGB(179, 245, 245, 245), size: 20),
         const SizedBox(height: 4),
         Text(
           title,
           style: const TextStyle(
-            color: Colors.white70,
+            color: Color.fromARGB(179, 183, 181, 181),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
