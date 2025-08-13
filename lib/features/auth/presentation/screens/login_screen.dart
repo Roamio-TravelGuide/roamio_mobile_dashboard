@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   final Color _inputColor = const Color(0xFF818898);
-  final Color _buttonColor = const Color(0xFF0F77EE); // New button color
+  final Color _buttonColor = const Color(0xFF0F77EE);
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0D0D12), // Add 0xFF prefix for opacity (fully opaque)
+      backgroundColor: const Color(0xFF0D0D12),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -75,36 +75,60 @@ class _LoginScreenState extends State<LoginScreen> {
               // Email Field
               Text(
                 'Email',
-                 style: TextStyle(color: Colors.white)?.copyWith(
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                     ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
-                hintText: 'Enter your email',
-                prefixIcon: Icons.email_outlined,
+                decoration: InputDecoration(
+                  hintText: 'Enter your email',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  filled: true,
+                  fillColor: Colors.grey[800],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
               // Password Field
-              Text('Password', style: TextStyle(color: Colors.white)),
+              Text(
+                'Password', 
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                    ),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.grey,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+                  filled: true,
+                  fillColor: Colors.grey[800],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
 
@@ -113,26 +137,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // Add navigation to forgot password screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
                   },
-                  child: const Text('Forgot Password?',style: TextStyle(color: Colors.blue),),
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: Colors.blue),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
 
-              // Login Button - Updated color here
+              // Login Button
               SizedBox(
-                width: double.infinity, // Takes full available width
-                height: 40, // Fixed height
-                child: MaterialButton(
-                  onPressed: _handleLogin,
-                  color: Colors.white,
-                  textColor: Colors.black,
-                  child: Text("Login",style: TextStyle(),),
-                  shape: RoundedRectangleBorder(
-                    // For rounded corners
-                    borderRadius: BorderRadius.circular(30),
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _buttonColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Login",
+                          style: TextStyle(color: Colors.white),
+                        ),
                 ),
               ),
               const SizedBox(height: 30),
