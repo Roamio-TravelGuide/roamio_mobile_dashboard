@@ -18,7 +18,7 @@ class TravelApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
          colorScheme: const ColorScheme.dark(
-         primary: Color.fromARGB(255, 34, 127, 233), // Exact color
+         primary: Colors.blue, // Exact color
     //background: Color(0xFF0A1220),
       ),
         scaffoldBackgroundColor: const Color(0xFF0D0D12),
@@ -57,7 +57,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-
+double currentPosition = 0.0;       // current slider position in seconds
+  double totalDuration = 225.0;       // total audio duration in seconds (e.g., 3:45)
     return Scaffold(
       extendBody: true, // let content go behind bottom nav
       body: CustomScrollView(
@@ -187,7 +188,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                         child: _AudioCard(
                           title: 'Tamil Lal Temple',
                           description:
-                              'Tamil Lal Temple is one of Bali\'s most iconic landmarks, known for its stegggg ggggg hhhhhhhh',
+                              'Tamil Lal Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
                           image: tanahLotPhotos[index % tanahLotPhotos.length],
                           index: index,
                           onPlayAudio: () => _onPlayAudio(index),
@@ -224,7 +225,19 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                     isPlaying = false;
                   });
                 },
-                isPlaying: isPlaying,
+                onNext: () {}, // provide actual logic
+  onPrevious: () {
+    // logic to go to previous track
+  },
+  onSeek: (value) {
+    setState(() {
+      currentPosition = value;
+    });
+  },
+  isPlaying: isPlaying,               // bool variable in your state
+  currentPosition: currentPosition,   // double variable in your state
+  totalDuration: totalDuration,       // double variable for max slider value
+  progressText: '0:00 / 3:45', 
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -342,19 +355,19 @@ void _showBuyTourDialog(BuildContext context) {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.2),
+                      color: const Color(0xFF40C4AA).withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.warning_outlined,
-                      color: Colors.amber,
+                      color:const Color(0xFF40C4AA) ,
                       size: 30,
                     ),
                   ),
                   const SizedBox(height: 16),
                   // Title text
                   Text(
-                    'Previews are limited to the first 2 locations. Buy the tour to get access to location',
+                    'Previews are limited to the first 2 locations. Buy the tour to get access to other location',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -567,12 +580,12 @@ Row(
       child: Row(
         children: [
           Icon(Icons.subdirectory_arrow_right,
-              color: cs.primary, size: 14),
+              color: Colors.blue, size: 14),
           const SizedBox(width: 4),
           Text(
             'Show map',
             style: TextStyle(
-              color: cs.primary,
+              color: Colors.blue,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -584,7 +597,7 @@ Row(
     OutlinedButton(
       onPressed: () {},
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: cs.primary, width: 1),
+        side: BorderSide(color: Colors.blue, width: 1),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
@@ -593,12 +606,12 @@ Row(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.headset, color: cs.primary, size: 14),
+          Icon(Icons.headset, color: Colors.blue, size: 14),
           const SizedBox(width: 6),
           Text(
             'Preview Tour',
             style: TextStyle(
-              color: cs.primary,
+              color: Colors.blue,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -741,7 +754,7 @@ class _AudioCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -766,7 +779,7 @@ class _AudioCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Color.fromARGB(179, 233, 221, 221),
                       fontSize: 13,
                       height: 1.3,
                     ),
@@ -776,8 +789,9 @@ class _AudioCard extends StatelessWidget {
                       TextSpan(
                         text: 'Read more...',
                         style: TextStyle(
-                          color: const Color.fromARGB(179, 16, 84, 171),
-                          fontWeight: FontWeight.w600,
+                          color: const Color.fromARGB(179, 248, 249, 250),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -839,12 +853,12 @@ class _ActionButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: cs.primary, size: 16),
+          Icon(icon, color: Colors.blue, size: 18),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: cs.primary,
+              color: Colors.blue,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -1004,103 +1018,79 @@ class _BottomAudioPlayer extends StatelessWidget {
   final String title;
   final VoidCallback onPlayPause;
   final VoidCallback onStop;
+  final VoidCallback onNext;
+  final VoidCallback onPrevious;
+  final ValueChanged<double> onSeek;
   final bool isPlaying;
+  final double currentPosition;
+  final double totalDuration;
+  final String progressText; // e.g., "2/5"
 
   const _BottomAudioPlayer({
     required this.title,
     required this.onPlayPause,
     required this.onStop,
+    required this.onNext,
+    required this.onPrevious,
+    required this.onSeek,
     required this.isPlaying,
-  });
+    required this.currentPosition,
+    required this.totalDuration,
+    required this.progressText,
+    Key? key,
+  }) : super(key: key);
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Stack(
+      children: [
+        // Main content of your screen
+        Column(
+          children: [
+            Expanded(
+              child: Center(child: Text('Main Screen Content')),
+            ),
+            ElevatedButton(
+              onPressed: () {},
+              child: Text('Start Trip'),
+            ),
+          ],
+        ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color.fromARGB(255, 5, 11, 26),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // Album art placeholder
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade700,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.music_note,
-              color: Colors.white54,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Title and controls
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {}, // Previous track
-                      child: Icon(
-                        Icons.skip_previous,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: onPlayPause,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.black,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {}, // Next track
-                      child: Icon(
-                        Icons.skip_next,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+        // Audio player at bottom (overlay)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 70, // push it above nav bar / start trip button
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _BottomAudioPlayer(
+              title: 'Tamil Lal Temple',
+              onPlayPause: () {},
+              onStop: () {},
+              onNext: () {},
+              onPrevious: () {},
+              onSeek: (value) {},
+              isPlaying: false,
+              currentPosition: 0,
+              totalDuration: 220,
+              progressText: '0:00 / 3:40',
             ),
           ),
-          // Close button
-          GestureDetector(
-            onTap: onStop,
-            child: Icon(
-              Icons.close,
-              color: Colors.white54,
-              size: 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+
+    // Bottom navigation bar
+    bottomNavigationBar: BottomNavigationBar(
+      items: const [
+        BottomNavigationBarItem(
+            icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.search), label: 'Search'),
+      ],
+    ),
+  );
+}
+
 }
