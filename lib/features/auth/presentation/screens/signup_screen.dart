@@ -1,5 +1,7 @@
+// lib/features/auth/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../../core/widgets/buttons/primary_button.dart';
+import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -10,16 +12,12 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  final Color _inputColor = const Color(0xFF818898);
-  final Color _buttonColor = const Color(0xFF0F77EE);
-  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +30,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
+              // Header
               Text(
                 'Create Account',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -48,152 +47,79 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 40),
 
-              // First Name
-              Text(
-                'First Name',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _firstNameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter your first name',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.person_outline, color: _inputColor),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 16),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Last Name
+              // Name Field
               Text(
                 'Full Name',
                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: _lastNameController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter your last name',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.person_outline, color: _inputColor),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 16),
-                ),
+              CustomTextField(
+                controller: _nameController,
+                hintText: 'Enter your full name',
+                prefixIcon: Icons.person_outline,
               ),
               const SizedBox(height: 24),
 
-              // Email
+              // Email Field
               Text(
                 'Email',
                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
-              TextField(
+              CustomTextField(
                 controller: _emailController,
-                style: const TextStyle(color: Colors.white),
+                hintText: 'Enter your email',
+                prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.email_outlined, color: _inputColor),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 16),
-                ),
               ),
               const SizedBox(height: 24),
 
-              // Password
+              // Password Field
               Text(
                 'Password',
                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
-              TextField(
+              CustomTextField(
                 controller: _passwordController,
-                style: const TextStyle(color: Colors.white),
+                hintText: 'Enter your password',
+                prefixIcon: Icons.lock_outline,
                 obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  hintText: 'Enter your password',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: _inputColor,
-                    ),
-                    onPressed: () => setState(
-                        () => _obscurePassword = !_obscurePassword),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
                   ),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 16),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Confirm Password
+              // Confirm Password Field
               Text(
                 'Confirm Password',
                  style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
-              TextField(
+              CustomTextField(
                 controller: _confirmPasswordController,
-                style: const TextStyle(color: Colors.white),
+                hintText: 'Re-enter your password',
+                prefixIcon: Icons.lock_outline,
                 obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  hintText: 'Re-enter your password',
-                  hintStyle: TextStyle(color: _inputColor),
-                  prefixIcon: Icon(Icons.lock_outline, color: _inputColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: _inputColor,
-                    ),
-                    onPressed: () => setState(() =>
-                        _obscureConfirmPassword = !_obscureConfirmPassword),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
                   ),
-                  filled: true,
-                  fillColor: _inputColor.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16, horizontal: 16),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 32),
@@ -227,11 +153,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
                         'Login',
@@ -252,52 +184,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _handleSignUp() {
-    final firstName = _firstNameController.text.trim();
-    final lastName = _lastNameController.text.trim();
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (firstName.isEmpty ||
-        lastName.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showError('Please fill all fields');
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
       return;
     }
 
     if (password != confirmPassword) {
-      _showError('Passwords do not match');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
       return;
     }
 
-    setState(() => _isLoading = true);
-    // TODO: Implement sign up logic
-    // After successful signup:
-    // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => _isLoading = false);
-    });
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    // Call your authentication provider
+    // context.read<AuthProvider>().signUp(name, email, password);
   }
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
