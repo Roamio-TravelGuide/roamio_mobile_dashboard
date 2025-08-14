@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import './package_checkout.dart';
+import 'audioplayer.dart';
 import 'gallery_page.dart';
-
+import 'mytrip.dart'; // Added import for MyTripScreen
 
 void main() {
   runApp(const TravelApp());
@@ -17,10 +18,10 @@ class TravelApp extends StatelessWidget {
       title: 'Travel Details',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-         colorScheme: const ColorScheme.dark(
-         primary: Colors.blue, // Exact color
-    //background: Color(0xFF0A1220),
-      ),
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.blue, // Exact color
+          //background: Color(0xFF0A1220),
+        ),
         scaffoldBackgroundColor: const Color(0xFF0D0D12),
         useMaterial3: true,
       ),
@@ -40,14 +41,26 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   int _currentNav = 0;
   int? currentPlayingIndex;
   bool isPlaying = false;
+  ValueNotifier<double> currentPositionNotifier = ValueNotifier(0.0);
+  double totalDuration = 225.0; // 3:45 in seconds
 
+ void onSeek(double value) {
+    currentPositionNotifier.value = value;
+    // If using an actual audio player, seek to position:
+    // audioPlayer.seek(Duration(seconds: value.toInt()));
+  }
+  @override
+  void dispose() {
+    currentPositionNotifier.dispose();
+    super.dispose();
+  }
   static const heroImage =
       'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop';
 
   static const tanahLotPhotos = <String>[
     'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?q=80&w=1600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1483683804023-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1494475673545-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1482192505345-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
@@ -57,8 +70,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-double currentPosition = 0.0;       // current slider position in seconds
-  double totalDuration = 225.0;       // total audio duration in seconds (e.g., 3:45)
+    double currentPosition = 0.0; // current slider position in seconds
+    double totalDuration = 225.0; // total audio duration in seconds (e.g., 3:45)
     return Scaffold(
       extendBody: true, // let content go behind bottom nav
       body: CustomScrollView(
@@ -208,91 +221,104 @@ double currentPosition = 0.0;       // current slider position in seconds
       bottomNavigationBar: SafeArea(
         top: false,
         bottom: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SizedBox(
+                    height: 52,
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {},
+                      child: const Text('Start a Trip'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                  child: Container(
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _NavItem(
+                          icon: Icons.explore_outlined,
+                          label: 'Explore',
+                          selected: _currentNav == 0,
+                          onTap: () => setState(() => _currentNav = 0),
+                        ),
+                        _NavItem(
+                          icon: Icons.favorite_outline,
+                          label: 'Saved',
+                          selected: _currentNav == 1,
+                          onTap: () => setState(() => _currentNav = 1),
+                        ),
+                        _NavItem(
+                          icon: Icons.calendar_month_outlined,
+                          label: 'Trips',
+                          selected: _currentNav == 2,
+                          onTap: () => setState(() => _currentNav = 2),
+                        ),
+                        _NavItem(
+                          icon: Icons.person_outline,
+                          label: 'Profile',
+                          selected: _currentNav == 3,
+                          onTap: () => setState(() => _currentNav = 3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             if (currentPlayingIndex != null && isPlaying)
-              _BottomAudioPlayer(
-                title: 'Tamil Lal Temple',
-                onPlayPause: () {
-                  setState(() {
-                    isPlaying = !isPlaying;
-                  });
-                },
-                onStop: () {
-                  setState(() {
-                    currentPlayingIndex = null;
-                    isPlaying = false;
-                  });
-                },
-                onNext: () {}, // provide actual logic
-  onPrevious: () {
-    // logic to go to previous track
-  },
-  onSeek: (value) {
-    setState(() {
-      currentPosition = value;
-    });
-  },
-  isPlaying: isPlaying,               // bool variable in your state
-  currentPosition: currentPosition,   // double variable in your state
-  totalDuration: totalDuration,       // double variable for max slider value
-  progressText: '0:00 / 3:45', 
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    
-                  },
-                  child: const Text('Start a Trip'),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: BottomAudioPlayer(
+                    title: 'Tamil Lal Temple',
+                    onPlayPause: () {
+                      setState(() {
+                        isPlaying = !isPlaying;
+                      });
+                    },
+                    onStop: () {
+                      setState(() {
+                        currentPlayingIndex = null;
+                        isPlaying = false;
+                      });
+                    },
+                    onNext: () {}, // provide actual logic
+                    onPrevious: () {
+                      // logic to go to previous track
+                    },
+                    onSeek: onSeek, // function to handle slider changes
+                    isPlaying: isPlaying, // bool variable in your state
+                    currentPositionNotifier: currentPositionNotifier, 
+                    totalDuration: totalDuration, // double variable for max slider value
+                    progressText: '0:00 / 3:45',
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-              child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(5),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _NavItem(
-                      icon: Icons.explore_outlined,
-                      label: 'Explore',
-                      selected: _currentNav == 0,
-                      onTap: () => setState(() => _currentNav = 0),
-                    ),
-                    _NavItem(
-                      icon: Icons.favorite_outline,
-                      label: 'Saved',
-                      selected: _currentNav == 1,
-                      onTap: () => setState(() => _currentNav = 1),
-                    ),
-                    _NavItem(
-                      icon: Icons.calendar_month_outlined,
-                      label: 'Trips',
-                      selected: _currentNav == 2,
-                      onTap: () => setState(() => _currentNav = 2),
-                    ),
-                    _NavItem(
-                      icon: Icons.person_outline,
-                      label: 'Profile',
-                      selected: _currentNav == 3,
-                      onTap: () => setState(() => _currentNav = 3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -316,6 +342,8 @@ double currentPosition = 0.0;       // current slider position in seconds
     }
   }
 }
+
+// When user drags the slider
 
 /* ------------------------------ Gallery Page ------------------------------- */
 void _showBuyTourDialog(BuildContext context) {
@@ -360,7 +388,7 @@ void _showBuyTourDialog(BuildContext context) {
                     ),
                     child: Icon(
                       Icons.warning_outlined,
-                      color:const Color(0xFF40C4AA) ,
+                      color: const Color(0xFF40C4AA),
                       size: 30,
                     ),
                   ),
@@ -454,8 +482,6 @@ void _showBuyTourDialog(BuildContext context) {
   );
 }
 
-
-
 /* ------------------------------ Shared Widgets ------------------------------- */
 
 class _TopToBottomShade extends StatelessWidget {
@@ -529,99 +555,101 @@ class _EllaDetailsSection extends StatelessWidget {
               '/5 (Reviews)',
               style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
             ),
-             const SizedBox(width: 6),
-             Text(
-      '•',
-      style: TextStyle(
-        color: Colors.white.withOpacity(0.5),
-        fontSize: 12,
-      ),
-    ),
-     const SizedBox(width: 6),
-    const Icon(Icons.map, size: 12, color: Colors.white70),
-    const SizedBox(width: 4),
-    const Text(
-      '137 km',
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-    ),         
-            
+            const SizedBox(width: 6),
+            Text(
+              '•',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.map, size: 12, color: Colors.white70),
+            const SizedBox(width: 4),
+            const Text(
+              '137 km',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
-        
         const SizedBox(height: 8),
-// "Show map" row
-Row(
-  children: [
-    RichText(
-      text: TextSpan(
-        children: [
-          const TextSpan(
-            text: '60 km ',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+        // "Show map" row
+        Row(
+          children: [
+            RichText(
+              text: TextSpan(
+                children: [
+                  const TextSpan(
+                    text: '60 km ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'away from you',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          TextSpan(
-            text: 'away from you',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {},
+              child: Row(
+                children: [
+                  Icon(Icons.subdirectory_arrow_right,
+                      color: Colors.blue, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Show map',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    ),
-    const SizedBox(width: 8),
-    GestureDetector(
-      onTap: () {},
-      child: Row(
-        children: [
-          Icon(Icons.subdirectory_arrow_right,
-              color: Colors.blue, size: 14),
-          const SizedBox(width: 4),
-          Text(
-            'Show map',
-            style: TextStyle(
-              color: Colors.blue,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            const Spacer(),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyTripScreen()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.blue, width: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.headset, color: Colors.blue, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Preview Tour',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    ),
-    const Spacer(),
-    OutlinedButton(
-      onPressed: () {},
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.blue, width: 1),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
+          ],
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.headset, color: Colors.blue, size: 14),
-          const SizedBox(width: 6),
-          Text(
-            'Preview Tour',
-            style: TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    ),
-  ],
-),
-
         const SizedBox(height: 10),
         // Description
         RichText(
@@ -1012,85 +1040,4 @@ class _RadioOption extends StatelessWidget {
       ),
     );
   }
-}
-
-class _BottomAudioPlayer extends StatelessWidget {
-  final String title;
-  final VoidCallback onPlayPause;
-  final VoidCallback onStop;
-  final VoidCallback onNext;
-  final VoidCallback onPrevious;
-  final ValueChanged<double> onSeek;
-  final bool isPlaying;
-  final double currentPosition;
-  final double totalDuration;
-  final String progressText; // e.g., "2/5"
-
-  const _BottomAudioPlayer({
-    required this.title,
-    required this.onPlayPause,
-    required this.onStop,
-    required this.onNext,
-    required this.onPrevious,
-    required this.onSeek,
-    required this.isPlaying,
-    required this.currentPosition,
-    required this.totalDuration,
-    required this.progressText,
-    Key? key,
-  }) : super(key: key);
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: Stack(
-      children: [
-        // Main content of your screen
-        Column(
-          children: [
-            Expanded(
-              child: Center(child: Text('Main Screen Content')),
-            ),
-            ElevatedButton(
-              onPressed: () {},
-              child: Text('Start Trip'),
-            ),
-          ],
-        ),
-
-        // Audio player at bottom (overlay)
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 70, // push it above nav bar / start trip button
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _BottomAudioPlayer(
-              title: 'Tamil Lal Temple',
-              onPlayPause: () {},
-              onStop: () {},
-              onNext: () {},
-              onPrevious: () {},
-              onSeek: (value) {},
-              isPlaying: false,
-              currentPosition: 0,
-              totalDuration: 220,
-              progressText: '0:00 / 3:40',
-            ),
-          ),
-        ),
-      ],
-    ),
-
-    // Bottom navigation bar
-    bottomNavigationBar: BottomNavigationBar(
-      items: const [
-        BottomNavigationBarItem(
-            icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.search), label: 'Search'),
-      ],
-    ),
-  );
-}
-
 }

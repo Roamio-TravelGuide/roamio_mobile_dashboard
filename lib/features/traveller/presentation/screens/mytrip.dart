@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'restaurant_detail.dart';
+import 'audioplayer.dart';
 
 class MyTripScreen extends StatefulWidget {
   @override
@@ -8,8 +9,8 @@ class MyTripScreen extends StatefulWidget {
 
 class _MyTripScreenState extends State<MyTripScreen> {
   bool isPlaying = false;
-  double audioProgress = 0.3; // 30% progress for demo
-  double playbackSpeed = 1.0;
+  ValueNotifier<double> currentPositionNotifier = ValueNotifier(38.0); // initial position
+  double totalDuration = 116.0; // 1:56
 
   // Sample restaurant data
   final List<Map<String, dynamic>> restaurants = [
@@ -40,6 +41,12 @@ class _MyTripScreenState extends State<MyTripScreen> {
   ];
 
   @override
+  void dispose() {
+    currentPositionNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
@@ -67,6 +74,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 100), // leave space for nav bar
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -83,7 +91,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
               ),
             ),
 
-            // Map placeholder area
+            // Map placeholder
             Container(
               margin: const EdgeInsets.all(16),
               height: 300,
@@ -127,125 +135,39 @@ class _MyTripScreenState extends State<MyTripScreen> {
               ),
             ),
 
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-              decoration: BoxDecoration(
-                color: Color(0xFF2D1B69), // Purple background like in the image
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  // Speed control and time display
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Speed control
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.speed, color: Colors.white, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${playbackSpeed}x',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // Current time
-                      Text(
-                        '0:38',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      
-                      // Remaining time
-                      Text(
-                        '-1:18',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Progress slider
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Colors.white,
-                      inactiveTrackColor: Colors.white.withOpacity(0.3),
-                      thumbColor: Colors.white,
-                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
-                      trackHeight: 3,
-                    ),
-                    child: Slider(
-                      value: audioProgress,
-                      onChanged: (value) {
-                        setState(() {
-                          audioProgress = value;
-                        });
-                      },
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Control buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.skip_previous, color: Colors.white, size: 32),
-                        onPressed: () {},
-                      ),
-                      const SizedBox(width: 24),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isPlaying = !isPlaying;
-                          });
-                        },
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Color(0xFF2D1B69),
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      IconButton(
-                        icon: Icon(Icons.skip_next, color: Colors.white, size: 32),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
+            const SizedBox(height: 16),
+
+            // Bottom Audio Player
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ValueListenableBuilder<double>(
+                valueListenable: currentPositionNotifier,
+                builder: (context, value, child) {
+                  return BottomAudioPlayer(
+                    title: 'Tanah Lot Temple Audio Guide',
+                    onPlayPause: () {
+                      setState(() {
+                        isPlaying = !isPlaying;
+                      });
+                    },
+                    onStop: () {
+                      setState(() {
+                        isPlaying = false;
+                        currentPositionNotifier.value = 0.0;
+                      });
+                    },
+                    onNext: () {},
+                    onPrevious: () {},
+                    onSeek: (position) {
+                      currentPositionNotifier.value = position;
+                    },
+                    isPlaying: isPlaying,
+                    currentPositionNotifier: currentPositionNotifier,
+                    totalDuration: totalDuration,
+                    progressText:
+                        '${(currentPositionNotifier.value / 60).floor()}:${(currentPositionNotifier.value % 60).floor().toString().padLeft(2, '0')} / ${(totalDuration / 60).floor()}:${(totalDuration % 60).floor().toString().padLeft(2, '0')}',
+                  );
+                },
               ),
             ),
 
@@ -262,90 +184,90 @@ class _MyTripScreenState extends State<MyTripScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             ...restaurants.map((restaurant) => Container(
-              margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RestaurantDetailScreen(
-                        name: restaurant['name'],
-                        image: restaurant['image'],
-                        rating: restaurant['rating'],
-                        description: restaurant['description'],
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          child: Image.network(
-                            restaurant['image'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.blue.shade300,
-                                child: Icon(
-                                  Icons.restaurant,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              );
-                            },
+                  margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RestaurantDetailScreen(
+                            name: restaurant['name'],
+                            image: restaurant['image'],
+                            rating: restaurant['rating'],
+                            description: restaurant['description'],
                           ),
                         ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade900,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              restaurant['name'],
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              child: Image.network(
+                                restaurant['image'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.blue.shade300,
+                                    child: Icon(
+                                      Icons.restaurant,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              restaurant['description'],
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  restaurant['name'],
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  restaurant['description'],
+                                  style: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.grey.shade500,
+                            size: 16,
+                          ),
+                        ],
                       ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.grey.shade500,
-                        size: 16,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            )).toList(),
-            
-            // Add some bottom padding
+                )),
+
+            // Add bottom padding to avoid content being hidden by nav bar
             const SizedBox(height: 100),
           ],
         ),

@@ -227,86 +227,109 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Tanah Lot Temple',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                
-                // Action buttons
-                Row(
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildActionButton(Icons.play_arrow, 'Play audio'),
-                    const SizedBox(width: 16),
-                    _buildActionButton(Icons.directions, 'Show directions'),
+                    const Text(
+                      'Tanah Lot Temple',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Action buttons
+                    Row(
+                      children: [
+                        _buildActionButton(Icons.play_arrow, 'Play audio'),
+                        const SizedBox(width: 16),
+                        _buildActionButton(Icons.directions, 'Show directions'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Description
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stegggg ggggg hhhhhhhh ',
+                          ),
+                          TextSpan(
+                            text: 'Read more....',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                
-                // Description
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.3,
-                    ),
-                    children: [
-                      const TextSpan(
-                        text: 'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stegggg ggggg hhhhhhhh ',
-                      ),
-                      TextSpan(
-                        text: 'Read more....',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              ),
+              const SizedBox(width: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=60&h=60&fit=crop',
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 60,
+                    height: 60,
+                    color: Colors.grey.shade700,
+                    child: const Icon(Icons.image, color: Colors.white54),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=60&h=60&fit=crop',
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey.shade700,
-                child: const Icon(Icons.image, color: Colors.white54),
               ),
-            ),
+              const SizedBox(width: 8),
+              // Checkbox
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white54),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white54,
+                  size: 14,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // Checkbox
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white54),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white54,
-              size: 14,
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                '\$50',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
