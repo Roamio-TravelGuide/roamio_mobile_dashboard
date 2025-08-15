@@ -38,7 +38,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             Stack(
               children: [
                 Container(
-                  height: 400,
+                  height: MediaQuery.of(context).size.height * 0.55,
                   width: double.infinity,
                   child: Image.network(
                     widget.image,
@@ -56,16 +56,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   ),
                 ),
                 
-                // Gradient overlay
                 Container(
-                  height: 400,
+                  height: MediaQuery.of(context).size.height * 0.55,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
+                      stops: [0.0, 0.6, 0.85, 1.0],
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.4),
+                        Colors.black.withOpacity(0.9),
                       ],
                     ),
                   ),
@@ -84,7 +86,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.withOpacity(0.4),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -100,7 +102,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withOpacity(0.4),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -114,11 +116,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withOpacity(0.4),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                Icons.share,
+                                Icons.refresh,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -134,7 +136,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
             // Restaurant info section
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -142,46 +144,52 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          widget.name,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.rating}/5 (Reviews)',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        child: Row(
+                          children: [
+                            Text(
+                              widget.name,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  
+                  Text(
+                    '${widget.rating}/5 (Reviews)',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // Show map button
                   Row(
                     children: [
                       Icon(
                         Icons.map_outlined,
-                        color: Colors.blue,
+                        color: Colors.blue.shade400,
                         size: 16,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         'Show map',
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.blue.shade400,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -197,18 +205,21 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       color: Colors.grey.shade300,
                       fontSize: 14,
                       height: 1.5,
+                      fontWeight: FontWeight.w400,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'Read more...',
                     style: TextStyle(
-                      color: Colors.blue,
+                      color: Colors.blue.shade400,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
                   // Gallery section
                   Row(
@@ -225,16 +236,15 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       Text(
                         'See All',
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.blue.shade400,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Gallery images
                   SizedBox(
                     height: 80,
                     child: ListView.builder(
@@ -242,7 +252,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       itemCount: galleryImages.length,
                       itemBuilder: (context, index) {
                         return Container(
-                          margin: EdgeInsets.only(right: 8),
+                          margin: EdgeInsets.only(right: 10),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
@@ -258,6 +268,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                                   child: Icon(
                                     Icons.image,
                                     color: Colors.white54,
+                                    size: 24,
                                   ),
                                 );
                               },
@@ -267,6 +278,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -282,58 +294,52 @@ class _BottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
+      height: 85,
       decoration: BoxDecoration(
         color: Colors.black,
         border: Border(
           top: BorderSide(color: Colors.grey.shade800, width: 0.5),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(Icons.home_outlined, 'Home', false),
-          _NavItem(Icons.location_on, 'My Trip', false),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavItem(Icons.home_outlined, 'Home', false),
+            _NavItem(Icons.location_on, 'My Trip', false),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade600,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.add, color: Colors.white, size: 26),
             ),
-            child: Icon(Icons.add, color: Colors.white, size: 24),
-          ),
-          _NavItem(Icons.favorite_outline, 'Favorite', false),
-          _NavItem(Icons.person_outline, 'Profile', false),
-        ],
+            _NavItem(Icons.favorite_outline, 'Favorite', false),
+            _NavItem(Icons.person_outline, 'Profile', false),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem(this.icon, this.label, this.isActive);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _NavItem(IconData icon, String label, bool isActive) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          color: isActive ? Colors.blue : Colors.grey.shade500,
+          color: isActive ? Colors.blue.shade400 : Colors.grey.shade500,
           size: 24,
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.blue : Colors.grey.shade500,
-            fontSize: 12,
+            color: isActive ? Colors.blue.shade400 : Colors.grey.shade500,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

@@ -886,8 +886,8 @@ class _ActionButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.blue,
-              fontSize: 13,
+              color: const Color.fromARGB(255, 193, 198, 202),
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
