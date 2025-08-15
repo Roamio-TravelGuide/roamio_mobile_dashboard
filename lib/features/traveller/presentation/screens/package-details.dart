@@ -232,7 +232,12 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                     height: 52,
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => MyTripScreen()),
+                        );
+                      },
                       child: const Text('Start a Trip'),
                     ),
                   ),

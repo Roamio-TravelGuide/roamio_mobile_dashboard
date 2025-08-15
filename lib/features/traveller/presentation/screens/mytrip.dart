@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'restaurant_detail.dart';
 import 'audioplayer.dart';
 
+
 class MyTripScreen extends StatefulWidget {
   @override
   _MyTripScreenState createState() => _MyTripScreenState();
@@ -123,17 +124,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
             ),
 
             // Current location info
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Tanah Lot Temple (2/5)',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            
 
             const SizedBox(height: 16),
 
@@ -144,7 +135,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                 valueListenable: currentPositionNotifier,
                 builder: (context, value, child) {
                   return BottomAudioPlayer(
-                    title: 'Tanah Lot Temple Audio Guide',
+                    title: 'Tanah Lot Temple',
                     onPlayPause: () {
                       setState(() {
                         isPlaying = !isPlaying;
@@ -204,7 +195,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
+                        color: const Color.fromARGB(255, 21, 23, 39),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
