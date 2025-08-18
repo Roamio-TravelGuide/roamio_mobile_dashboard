@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../features/auth/presentation/screens/login_screen.dart';
+// import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/Landing/presentation/screens/home_screen.dart';
 // import '../routes/route_guard.dart';
 
 class MyApp extends StatelessWidget {
@@ -20,11 +21,11 @@ class MyApp extends StatelessWidget {
 
 // Define routes
 final GoRouter _router = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/home',
   routes: [
     GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
+      path: '/home',
+      builder: (context, state) => const HomeScreen(),
     ),
     // Other routes (dashboard, register, etc.)
   ],

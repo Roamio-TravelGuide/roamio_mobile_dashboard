@@ -12,7 +12,7 @@ class AppRoutes {
 }
 
 final router = GoRouter(
-  initialLocation: AppRoutes.login,
+  initialLocation: AppRoutes.home,
   routes: [
     GoRoute(
       path: AppRoutes.login,
