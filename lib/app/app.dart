@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../features/auth/presentation/screens/login_screen.dart';
-// import '../routes/route_guard.dart';
+import '../routes/app_router.dart';  
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -13,20 +11,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      routerConfig: _router,
+      routerConfig: router,  
     );
   }
 }
-
-// Define routes
-final GoRouter _router = GoRouter(
-  initialLocation: '/login',
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    // Other routes (dashboard, register, etc.)
-  ],
-  // redirect: RouteGuard.checkAuth, // Optional route guard
-);

@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
-import '../features/Landing/presentation/screens/home_screen.dart';
+import '../features/landing/presentation/screens/home_screen.dart';
 import 'route_guard.dart';
 
 class AppRoutes {
@@ -12,7 +12,7 @@ class AppRoutes {
 }
 
 final router = GoRouter(
-  initialLocation: AppRoutes.login,
+  initialLocation: AppRoutes.home,
   routes: [
     GoRoute(
       path: AppRoutes.login,
