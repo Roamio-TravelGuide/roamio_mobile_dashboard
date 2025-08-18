@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // for kDebugMode
 import 'package:flutter/material.dart';
 import '../routes/app_router.dart';  
 
