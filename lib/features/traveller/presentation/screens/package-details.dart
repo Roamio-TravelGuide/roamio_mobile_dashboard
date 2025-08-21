@@ -44,16 +44,26 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   ValueNotifier<double> currentPositionNotifier = ValueNotifier(0.0);
   double totalDuration = 225.0; // 3:45 in seconds
 
- void onSeek(double value) {
+  final List<String> stopTitles = [
+    'Tanah Lot Temple',
+    'Sacred Water Temple',
+    'Mountain View Point',
+    'Traditional Market',
+    'Sunset Beach',
+  ];
+
+  void onSeek(double value) {
     currentPositionNotifier.value = value;
     // If using an actual audio player, seek to position:
     // audioPlayer.seek(Duration(seconds: value.toInt()));
   }
+
   @override
   void dispose() {
     currentPositionNotifier.dispose();
     super.dispose();
   }
+
   static const heroImage =
       'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop';
 
@@ -199,9 +209,9 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _AudioCard(
-                          title: 'Tamil Lal Temple',
+                          title: stopTitles[index],
                           description:
-                              'Tamil Lal Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
+                              'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
                           image: tanahLotPhotos[index % tanahLotPhotos.length],
                           index: index,
                           onPlayAudio: () => _onPlayAudio(index),
@@ -300,7 +310,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                     ],
                   ),
                   child: BottomAudioPlayer(
-                    title: 'Tamil Lal Temple',
+                    title: currentPlayingIndex != null ? stopTitles[currentPlayingIndex!] : 'No Audio Playing',
                     onPlayPause: () {
                       setState(() {
                         isPlaying = !isPlaying;
@@ -312,14 +322,26 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                         isPlaying = false;
                       });
                     },
-                    onNext: () {}, // provide actual logic
-                    onPrevious: () {
-                      // logic to go to previous track
+                    onNext: () {
+                      if (currentPlayingIndex != null && currentPlayingIndex! < 1) {
+                        setState(() {
+                          currentPlayingIndex = currentPlayingIndex! + 1;
+                          isPlaying = true;
+                        });
+                      }
                     },
-                    onSeek: onSeek, // function to handle slider changes
-                    isPlaying: isPlaying, // bool variable in your state
-                    currentPositionNotifier: currentPositionNotifier, 
-                    totalDuration: totalDuration, // double variable for max slider value
+                    onPrevious: () {
+                      if (currentPlayingIndex != null && currentPlayingIndex! > 0) {
+                        setState(() {
+                          currentPlayingIndex = currentPlayingIndex! - 1;
+                          isPlaying = true;
+                        });
+                      }
+                    },
+                    onSeek: onSeek,
+                    isPlaying: isPlaying,
+                    currentPositionNotifier: currentPositionNotifier,
+                    totalDuration: totalDuration,
                     progressText: '0:00 / 3:45',
                   ),
                 ),
@@ -727,7 +749,7 @@ class _InfoColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: const Color.fromARGB(179, 245, 245, 245), size: 20),
+        Icon(icon, color: Colors.blue, size: 20),
         const SizedBox(height: 4),
         Text(
           title,
