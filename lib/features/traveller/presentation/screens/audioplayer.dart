@@ -10,7 +10,7 @@ class BottomAudioPlayer extends StatelessWidget {
   final bool isPlaying;
   final ValueNotifier<double> currentPositionNotifier;
   final double totalDuration;
-  final String progressText; // e.g., "0:38 / 1:56"
+  final String progressText; // e.g., "2/5"
 
   const BottomAudioPlayer({
     required this.title,
@@ -60,84 +60,124 @@ class BottomAudioPlayer extends StatelessWidget {
                 ),
                 child: Text(
                   progressText,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Speed, replay, slider, refresh row
+          // Speed control + slider with time labels + replay button
           ValueListenableBuilder<double>(
             valueListenable: currentPositionNotifier,
             builder: (context, currentPosition, _) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Speed label
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text('1x', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      Text('speed', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Replay button
-                  _circleIcon(Icons.replay),
-
-                  const SizedBox(width: 8),
-
-                  // Slider and times
-                  Expanded(
-                    child: Column(
-                      children: [
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 3,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-                            thumbColor: Colors.white,
-                            activeTrackColor: Colors.white,
-                            inactiveTrackColor: Colors.white.withOpacity(0.3),
-                          ),
-                          child: Slider(
-                            value: currentPosition,
-                            min: 0,
-                            max: totalDuration,
-                            onChanged: onSeek,
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _formatTime(currentPosition),
-                              style: const TextStyle(color: Colors.white54, fontSize: 12),
-                            ),
-                            Text(
-                              '-${_formatTime(totalDuration - currentPosition)}',
-                              style: const TextStyle(color: Colors.white54, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: const Text(
+                      '1x\nspeed',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        height: 1.2,
+                      ),
                     ),
                   ),
-
-                  const SizedBox(width: 8),
-
+                  const SizedBox(width: 12),
+                  
                   // Refresh button
-                  _circleIcon(Icons.refresh),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  
+                  Expanded(
+                    child: SizedBox(
+                      height: 40, // Match button height for perfect alignment
+                      child: Stack(
+                        children: [
+                          // Slider centered vertically
+                          Align(
+                            alignment: Alignment.center,
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                                thumbColor: Colors.white,
+                                activeTrackColor: Colors.white,
+                                inactiveTrackColor: Colors.white.withOpacity(0.3),
+                              ),
+                              child: Slider(
+                                value: currentPosition,
+                                min: 0,
+                                max: totalDuration,
+                                onChanged: onSeek,
+                              ),
+                            ),
+                          ),
+                          // Time labels positioned at bottom
+                          Positioned(
+                            bottom: -4,
+                            left: 12,
+                            right: 12,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatTime(currentPosition),
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                ),
+                                Text(
+                                  '-${_formatTime(totalDuration - currentPosition)}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 4),
+                  
+                  // Repeat button
+                  Container(
+                    width: 40,
+                    height: 40,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
                 ],
               );
             },
           ),
+          
+          const SizedBox(height: 20),
 
-          const SizedBox(height: 16),
-
-          // Previous / Play-Pause / Next
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -173,19 +213,6 @@ class BottomAudioPlayer extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  // Helper widget for circular icons
-  static Widget _circleIcon(IconData icon) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.black, size: 20),
     );
   }
 

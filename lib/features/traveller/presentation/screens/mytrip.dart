@@ -50,9 +50,9 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor:const Color(0xFF0D0D12) ,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF0D0D12),
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
@@ -95,7 +95,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
             // Map placeholder
             Container(
               margin: const EdgeInsets.all(16),
-              height: 300,
+              height: 370,
               decoration: BoxDecoration(
                 color: Colors.grey.shade800,
                 borderRadius: BorderRadius.circular(12),
@@ -110,7 +110,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                       color: Colors.grey.shade500,
                       size: 48,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       'Map will be integrated here',
                       style: TextStyle(
@@ -130,7 +130,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
             // Bottom Audio Player
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 6),
               child: ValueListenableBuilder<double>(
                 valueListenable: currentPositionNotifier,
                 builder: (context, value, child) {
@@ -164,7 +164,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
             // Cafes & Restaurants section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Text(
                 'Cafes & Restaurants Near By',
                 style: TextStyle(
@@ -195,7 +195,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 21, 23, 39),
+                        color: const Color.fromARGB(255, 5, 11, 26),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -275,9 +275,7 @@ class _BottomNavigationBar extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         color: Colors.black,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade800, width: 0.5),
-        ),
+        
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
