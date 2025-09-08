@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'intro_1.dart'; // 👈 Import your next page
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,9 +10,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   @override
+  void initState() {
+    super.initState();
+
+    // Wait for first frame, then start delay + navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Intro1Screen()),
+        );
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D12), // Matching your login screen background
+      backgroundColor: const Color(0xFF0D0D12),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -21,66 +37,23 @@ class _HomeScreenState extends State<HomeScreen> {
               Color(0xFF2DD4BF), // Teal color at top
               Color(0xFF3B82F6), // Blue color at bottom
             ],
-            stops: [0.0, 1.0],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Status bar area
               const SizedBox(height: 20),
-              
-              // Top status indicators (time, signal, battery)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '9:41',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.signal_cellular_4_bar,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.wifi,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.battery_full,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Main content area - centered logo
+
+              // Main content
               Expanded(
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo and text container
+                      // Logo
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Location pin icon
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -94,44 +67,31 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          
-                          // Roamio text
                           Text(
                             'Roamio',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 36,
-                              letterSpacing: 0.5,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 36,
+                                  letterSpacing: 0.5,
+                                ),
                           ),
                         ],
                       ),
-                      
                       const SizedBox(height: 20),
-                      
-                      // Subtitle
                       Text(
                         'Your Travel Companion',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 16,
-                          letterSpacing: 0.3,
-                        ),
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 16,
+                              letterSpacing: 0.3,
+                            ),
                       ),
                     ],
                   ),
-                ),
-              ),
-              
-              // Bottom indicator (home indicator line)
-              Container(
-                width: 134,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(2.5),
                 ),
               ),
             ],
@@ -139,11 +99,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    // Clean up any controllers if needed in the future
-    super.dispose();
   }
 }

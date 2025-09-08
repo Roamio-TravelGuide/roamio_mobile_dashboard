@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 
 class SelectUserScreen extends StatefulWidget {
   const SelectUserScreen({super.key});
@@ -33,42 +34,6 @@ class _SelectUserScreenState extends State<SelectUserScreen> {
               children: [
                 // Status bar area
                 const SizedBox(height: 20),
-                
-                // Top status indicators
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '9:41',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.signal_cellular_4_bar,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.wifi,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.battery_full,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
                 
                 const SizedBox(height: 60),
                 
