@@ -190,7 +190,7 @@ class BottomAudioPlayer extends StatelessWidget {
               GestureDetector(
                 onTap: onPlayPause,
                 child: Container(
-                  width: 56,
+                  width: 156,
                   height: 56,
                   decoration: const BoxDecoration(
                     color: Colors.white,

@@ -50,7 +50,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:const Color(0xFF0D0D12) ,
+      backgroundColor:const Color(0xFF0D0D12),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D12),
         elevation: 0,
