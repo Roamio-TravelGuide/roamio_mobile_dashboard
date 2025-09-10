@@ -106,6 +106,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 hintText: 'Enter your phone number',
                 prefixIcon: Icons.phone,
                 keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Phone Number',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 24),
 

@@ -67,6 +67,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Email',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 24), // Added space between email and password
 
