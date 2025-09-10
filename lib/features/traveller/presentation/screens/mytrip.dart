@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'restaurant_detail.dart';
 import 'audioplayer.dart';
 
-
 class MyTripScreen extends StatefulWidget {
   @override
   _MyTripScreenState createState() => _MyTripScreenState();
@@ -50,7 +49,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:const Color(0xFF0D0D12),
+      backgroundColor: const Color(0xFF0D0D12),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D12),
         elevation: 0,
@@ -75,7 +74,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 100), // leave space for nav bar
+        padding: const EdgeInsets.only(bottom: 120), // increased from 100 to 120
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -130,7 +129,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
             // Bottom Audio Player
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: ValueListenableBuilder<double>(
                 valueListenable: currentPositionNotifier,
                 builder: (context, value, child) {
@@ -257,74 +256,10 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     ),
                   ),
                 )),
-
-            // Add bottom padding to avoid content being hidden by nav bar
-            const SizedBox(height: 100),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNavigationBar(),
-    );
-  }
-}
-
-class _BottomNavigationBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(Icons.home_outlined, 'Home', false),
-          _NavItem(Icons.location_on, 'My Trip', true),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.add, color: Colors.white, size: 24),
-          ),
-          _NavItem(Icons.favorite_outline, 'Favorite', false),
-          _NavItem(Icons.person_outline, 'Profile', false),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem(this.icon, this.label, this.isActive);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.blue : Colors.grey.shade500,
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.blue : Colors.grey.shade500,
-            fontSize: 12,
-          ),
-        ),
-      ],
+      // The parent travel app already has its own bottom navigation
     );
   }
 }
