@@ -49,9 +49,9 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0D0D12),
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF0D0D12),
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
@@ -74,7 +74,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 100), // leave space for nav bar
+        padding: const EdgeInsets.only(bottom: 120), // increased from 100 to 120
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -94,7 +94,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
             // Map placeholder
             Container(
               margin: const EdgeInsets.all(16),
-              height: 300,
+              height: 370,
               decoration: BoxDecoration(
                 color: Colors.grey.shade800,
                 borderRadius: BorderRadius.circular(12),
@@ -109,7 +109,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                       color: Colors.grey.shade500,
                       size: 48,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       'Map will be integrated here',
                       style: TextStyle(
@@ -123,28 +123,18 @@ class _MyTripScreenState extends State<MyTripScreen> {
             ),
 
             // Current location info
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Tanah Lot Temple (2/5)',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            
 
             const SizedBox(height: 16),
 
             // Bottom Audio Player
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: ValueListenableBuilder<double>(
                 valueListenable: currentPositionNotifier,
                 builder: (context, value, child) {
                   return BottomAudioPlayer(
-                    title: 'Tanah Lot Temple Audio Guide',
+                    title: 'Tanah Lot Temple',
                     onPlayPause: () {
                       setState(() {
                         isPlaying = !isPlaying;
@@ -173,7 +163,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
             // Cafes & Restaurants section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Text(
                 'Cafes & Restaurants Near By',
                 style: TextStyle(
@@ -204,7 +194,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
+                        color: const Color.fromARGB(255, 5, 11, 26),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -266,76 +256,10 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     ),
                   ),
                 )),
-
-            // Add bottom padding to avoid content being hidden by nav bar
-            const SizedBox(height: 100),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNavigationBar(),
-    );
-  }
-}
-
-class _BottomNavigationBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade800, width: 0.5),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(Icons.home_outlined, 'Home', false),
-          _NavItem(Icons.location_on, 'My Trip', true),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.add, color: Colors.white, size: 24),
-          ),
-          _NavItem(Icons.favorite_outline, 'Favorite', false),
-          _NavItem(Icons.person_outline, 'Profile', false),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem(this.icon, this.label, this.isActive);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.blue : Colors.grey.shade500,
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.blue : Colors.grey.shade500,
-            fontSize: 12,
-          ),
-        ),
-      ],
+      // The parent travel app already has its own bottom navigation
     );
   }
 }
