@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/config/env_config.dart';
 import '../../api/auth_api.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
+import 'package:go_router/go_router.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,12 +19,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  final ApiClient apiClient = ApiClient();
+  late final ApiClient apiClient;
   late AuthApi authApi;
 
   @override
   void initState() {
     super.initState();
+    apiClient = ApiClient(customBaseUrl: EnvConfig.baseUrl);
     authApi = AuthApi(apiClient: apiClient);
   }
 
@@ -184,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final result = await authApi.login(email: email, password: password);
+      final result = await authApi.login(email: email, password: password,role: "traveler");
 
       if (result['success'] == true) {
         // Extract token from response (adjust based on your API response structure)
@@ -195,10 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (token != null) {
           // Save token to shared preferences
           await AuthApi.saveAuthData(token, email);
-          
-          // Navigate to home screen
-          Navigator.pushReplacementNamed(context, '/home');
-          
+
+          // Navigate to home screen using GoRouter
+          GoRouter.of(context).go('/home');
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['message'] ?? 'Login successful')),
           );
@@ -207,6 +210,10 @@ class _LoginScreenState extends State<LoginScreen> {
             const SnackBar(content: Text('No authentication token received')),
           );
         }
+      } else if (result['statusCode'] == 403) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login not allowed for this role. Only Traveler and Travel Guide can login.')),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? 'Login failed')),
