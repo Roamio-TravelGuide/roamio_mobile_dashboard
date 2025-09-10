@@ -73,20 +73,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _nameController,
                 hintText: 'Enter your full name',
                 prefixIcon: Icons.person_outline,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Full Name',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 24),
 
               // Email Field
-              Text(
-                'Email',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 8),
               CustomTextField(
                 controller: _emailController,
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Email',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 24),
 
@@ -105,11 +110,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 24),
 
               // Password Field
-              Text(
-                'Password',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 8),
               CustomTextField(
                 controller: _passwordController,
                 hintText: 'Enter your password',
@@ -126,15 +126,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     });
                   },
                 ),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Password',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 24),
 
               // Confirm Password Field
-              Text(
-                'Confirm Password',
-                 style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 8),
               CustomTextField(
                 controller: _confirmPasswordController,
                 hintText: 'Re-enter your password',
@@ -151,6 +151,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     });
                   },
                 ),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Confirm Password',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 32),
 

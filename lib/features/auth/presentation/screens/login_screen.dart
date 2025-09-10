@@ -5,6 +5,7 @@ import '../../api/auth_api.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'package:go_router/go_router.dart';
 import 'signup_screen.dart';
+import 'forgotpassword_screen.dart'; // ADD THIS IMPORT
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -67,9 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24), // Added space between email and password
 
               // Password Field
+
               const Text('Password', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               CustomTextField(
@@ -88,15 +90,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     });
                   },
                 ),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Password',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
 
-              // Forgot Password
+              // Forgot Password - UPDATED THIS SECTION
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // Add navigation to forgot password screen
+                    // Navigation to forgot password screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
                   },
                   child: const Text('Forgot Password?', style: TextStyle(color: Colors.blue)),
                 ),
