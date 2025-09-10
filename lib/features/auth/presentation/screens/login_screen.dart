@@ -1,6 +1,6 @@
-// lib/features/auth/presentation/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/buttons/primary_button.dart';
+import '../../../../core/api/api_client.dart';
+import '../../api/auth_api.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'signup_screen.dart';
 
@@ -15,11 +15,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  final ApiClient apiClient = ApiClient();
+  late AuthApi authApi;
+
+  @override
+  void initState() {
+    super.initState();
+    authApi = AuthApi(apiClient: apiClient);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0D0D12), // Add 0xFF prefix for opacity (fully opaque)
+      backgroundColor: const Color(0xFF0D0D12),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -38,34 +48,32 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               Text(
                 'Welcome to Roamio enjoy your Trip with us',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 40),
 
               // Email Field
-              Text(
+              const Text(
                 'Email or Phone Number',
-                 style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _emailController,
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 8),
 
               // Password Field
-              Text('Password', style: TextStyle(color: Colors.white)),
+              const Text('Password', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _passwordController,
                 hintText: 'Enter your password',
                 prefixIcon: Icons.lock_outline,
                 obscureText: _obscurePassword,
-                
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -87,22 +95,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     // Add navigation to forgot password screen
                   },
-                  child: const Text('Forgot Password?',style: TextStyle(color: Colors.blue),),
+                  child: const Text('Forgot Password?', style: TextStyle(color: Colors.blue)),
                 ),
               ),
               const SizedBox(height: 32),
 
               // Login Button
               SizedBox(
-                width: double.infinity, // Takes full available width
-                height: 40, // Fixed height
+                width: double.infinity,
+                height: 40,
                 child: MaterialButton(
-                  onPressed: _handleLogin,
+                  onPressed: _isLoading ? null : _handleLogin,
                   color: Colors.white,
                   textColor: Colors.black,
-                  child: Text("Login",style: TextStyle(),),
+                  disabledColor: Colors.grey,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text("Login"),
                   shape: RoundedRectangleBorder(
-                    // For rounded corners
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
@@ -116,19 +133,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignUpScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SignUpScreen(),
+                                ),
+                              );
+                            },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -151,17 +168,59 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
       return;
     }
-    // Authentication logic
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await authApi.login(email: email, password: password);
+
+      if (result['success'] == true) {
+        // Extract token from response (adjust based on your API response structure)
+        final token = result['data']['token'] ?? 
+                     result['data']['accessToken'] ?? 
+                     result['data']['access_token'];
+        
+        if (token != null) {
+          // Save token to shared preferences
+          await AuthApi.saveAuthData(token, email);
+          
+          // Navigate to home screen
+          Navigator.pushReplacementNamed(context, '/home');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? 'Login successful')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No authentication token received')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Login failed')),
+        );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: ${error.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
