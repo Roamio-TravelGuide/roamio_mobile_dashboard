@@ -1,4 +1,5 @@
 // app.dart
+import 'package:Roamio/features/auth/presentation/screens/signup_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +30,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+
+    GoRoute(
+      path:'/signup',
+      builder: (context, state) => const SignUpScreen(), // Replace with SignupScreen when available
     ),
     // Screens with bottom navigation
     GoRoute(

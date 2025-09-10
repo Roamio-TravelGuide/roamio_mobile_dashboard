@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/widgets/buttons/primary_button.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'login_screen.dart';
+import '../../../../core/api/api_client.dart';
+import '../../api/auth_api.dart';
+import '../../../../core/config/env_config.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,8 +18,18 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String _selectedRole = 'traveler';
+  late final ApiClient apiClient;
+  late final AuthApi authApi;
+  @override
+  void initState() {
+    super.initState();
+    apiClient = ApiClient(customBaseUrl: EnvConfig.baseUrl);
+    authApi = AuthApi(apiClient: apiClient);
+  }
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -30,6 +44,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
+
+            
               // Header
               Text(
                 'Create Account',
@@ -76,6 +92,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   labelText: 'Email',
                 ),
                 style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 24),
+
+              // Phone Number Field
+              Text(
+                'Phone Number',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              CustomTextField(
+                controller: _phoneController,
+                hintText: 'Enter your phone number',
+                prefixIcon: Icons.phone,
+                keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 24),
 
@@ -191,10 +221,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void _handleSignUp() {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
+  final phone = _phoneController.text.trim();
+  final password = _passwordController.text.trim();
+  final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all fields')),
       );
@@ -208,16 +239,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // Call your authentication provider
-    // context.read<AuthProvider>().signUp(name, email, password);
+    authApi.signup(
+      email: email,
+      password: password,
+      name: name,
+      role: _selectedRole,
+      phoneNo: phone,
+    ).then((result) {
+      print('Signup API result: $result');
+      if (result['success'] == true) {
+        print('Signup successful, redirecting to login...');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Signup successful')),
+        );
+        Future.delayed(const Duration(seconds: 1), () {
+          print('Redirecting to /login');
+          GoRouter.of(context).go('/login');
+        });
+      } else {
+        String errorMsg = result['message'] ?? 'Signup failed';
+        if (result['statusCode'] == 400 || result['statusCode'] == 409) {
+          errorMsg = 'Email already registered or invalid data.';
+        }
+        print('Signup failed: $errorMsg');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
+    }).catchError((error) {
+      print('Signup error: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: \\${error.toString()}')),
+      );
+    });
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+  _nameController.dispose();
+  _emailController.dispose();
+  _phoneController.dispose();
+  _passwordController.dispose();
+  _confirmPasswordController.dispose();
     super.dispose();
   }
 }
