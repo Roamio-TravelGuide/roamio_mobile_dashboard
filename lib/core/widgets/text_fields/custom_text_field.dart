@@ -17,7 +17,7 @@ class CustomTextField extends StatefulWidget {
     this.suffixIcon,
     this.obscureText = false,
     this.keyboardType,
-    this.onChanged,
+    this.onChanged, required InputDecoration decoration, required TextStyle style,
   });
 
   @override

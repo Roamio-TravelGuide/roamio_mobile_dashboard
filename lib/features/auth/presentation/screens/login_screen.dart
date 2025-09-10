@@ -1,8 +1,8 @@
-// lib/features/auth/presentation/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/buttons/primary_button.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'signup_screen.dart';
+import 'forgotpassword_screen.dart'; // ADD THIS IMPORT
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0D0D12), // Add 0xFF prefix for opacity (fully opaque)
+      backgroundColor: Color(0xFF0D0D12),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -54,18 +54,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Email',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24), // Added space between email and password
 
               // Password Field
-              Text('Password', style: TextStyle(color: Colors.white)),
+              Text(
+                'Password',
+                 style: TextStyle(color: Colors.white),
+              ),
               const SizedBox(height: 8),
               CustomTextField(
                 controller: _passwordController,
                 hintText: 'Enter your password',
                 prefixIcon: Icons.lock_outline,
                 obscureText: _obscurePassword,
-                
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -77,15 +84,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     });
                   },
                 ),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Password',
+                ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
 
-              // Forgot Password
+              // Forgot Password - UPDATED THIS SECTION
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // Add navigation to forgot password screen
+                    // Navigation to forgot password screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
                   },
                   child: const Text('Forgot Password?',style: TextStyle(color: Colors.blue),),
                 ),
@@ -94,15 +112,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Login Button
               SizedBox(
-                width: double.infinity, // Takes full available width
-                height: 40, // Fixed height
+                width: double.infinity,
+                height: 40,
                 child: MaterialButton(
                   onPressed: _handleLogin,
                   color: Colors.white,
                   textColor: Colors.black,
                   child: Text("Login",style: TextStyle(),),
                   shape: RoundedRectangleBorder(
-                    // For rounded corners
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
