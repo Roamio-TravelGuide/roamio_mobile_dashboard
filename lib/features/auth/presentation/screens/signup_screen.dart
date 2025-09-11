@@ -1,6 +1,5 @@
 // lib/features/auth/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/buttons/primary_button.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'login_screen.dart';
 import '../../../../core/api/api_client.dart';

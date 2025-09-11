@@ -5,7 +5,7 @@ import '../../api/auth_api.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'package:go_router/go_router.dart';
 import 'signup_screen.dart';
-import 'forgotpassword_screen.dart'; // ADD THIS IMPORT
+import 'forgotpassword_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,14 +45,17 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'Welcome Back',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Welcome to Roamio enjoy your Trip with us',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 40),
 
@@ -73,10 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 style: const TextStyle(color: Colors.white),
               ),
-              const SizedBox(height: 24), // Added space between email and password
+              const SizedBox(height: 24),
 
               // Password Field
-
               const Text('Password', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               CustomTextField(
@@ -103,12 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Forgot Password - UPDATED THIS SECTION
+              // Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // Navigation to forgot password screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -116,7 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     );
                   },
-                  child: const Text('Forgot Password?', style: TextStyle(color: Colors.blue)),
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: Colors.blue),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -136,7 +140,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.black),
                           ),
                         )
                       : const Text("Login"),
@@ -154,7 +159,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: Colors.grey[600]),
                     ),
                     TextButton(
                       onPressed: _isLoading
@@ -173,10 +181,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Text(
                         'Sign Up',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                   ],
@@ -205,23 +214,32 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final result = await authApi.login(email: email, password: password,role: "traveler");
+      // By default try traveler login
+      var result =
+          await authApi.login(email: email, password: password, role: "traveler");
+
+      // If traveler login is forbidden, try travel_guide
+      if (result['statusCode'] == 403) {
+        result = await authApi.login(
+            email: email, password: password, role: "travel_guide");
+      }
 
       if (result['success'] == true) {
-        // Extract token from response (adjust based on your API response structure)
-        final token = result['data']['token'] ?? 
-                     result['data']['accessToken'] ?? 
-                     result['data']['access_token'];
-        
-        if (token != null) {
-          // Save token to shared preferences
+        final token = result['data']['token'] ??
+            result['data']['accessToken'] ??
+            result['data']['access_token'];
+        final userRole = result['data']['user']?['role'];
+
+        if (token != null && (userRole == 'traveler' || userRole == 'travel_guide')) {
           await AuthApi.saveAuthData(token, email);
-
-          // Navigate to home screen using GoRouter
           GoRouter.of(context).go('/home');
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['message'] ?? 'Login successful')),
+          );
+        } else if (token != null) {
+          // Token received but role is not allowed
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login not allowed. Only Traveler and Travel Guide can login.')),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -230,7 +248,10 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else if (result['statusCode'] == 403) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login not allowed for this role. Only Traveler and Travel Guide can login.')),
+          const SnackBar(
+            content: Text(
+                'Login not allowed. Only Traveler and Travel Guide can login.'),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
