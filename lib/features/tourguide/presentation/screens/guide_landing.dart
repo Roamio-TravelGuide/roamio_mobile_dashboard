@@ -8,7 +8,8 @@ class GuideLandingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(), // Smooth scrolling
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -22,10 +23,7 @@ class GuideLandingScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Good Morning',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       const Text(
@@ -38,10 +36,7 @@ class GuideLandingScreen extends StatelessWidget {
                       ),
                       Text(
                         'Audio Tour Creator',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
                       ),
                     ],
                   ),
@@ -117,42 +112,41 @@ class GuideLandingScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              Expanded(
-                child: ListView(
-                  children: const [
-                    AudioTourItem(
-                      title: 'Historic Downtown Audio Tour',
-                      rating: 4.8,
-                      duration: '45 min',
-                      steps: '14 stops',
-                      downloads: '324 downloads',
-                    ),
-                    SizedBox(height: 15),
-                    AudioTourItem(
-                      title: 'Art Museum Audio Guide',
-                      rating: 4.6,
-                      duration: '60 min',
-                      steps: '12 stops',
-                      downloads: '156 downloads',
-                    ),
-                    SizedBox(height: 15),
-                    AudioTourItem(
-                      title: 'Art Museum Audio Guide',
-                      rating: 4.6,
-                      duration: '60 min',
-                      steps: '12 stops',
-                      downloads: '156 downloads',
-                    ),
-                    SizedBox(height: 15),
-                    AudioTourItem(
-                      title: 'Art Museum Audio Guide',
-                      rating: 4.6,
-                      duration: '60 min',
-                      steps: '12 stops',
-                      downloads: '156 downloads',
-                    ),
-                  ],
-                ),
+              // Instead of Expanded, just build a Column (no overflow)
+              Column(
+                children: const [
+                  AudioTourItem(
+                    title: 'Historic Downtown Audio Tour',
+                    rating: 4.8,
+                    duration: '45 min',
+                    steps: '14 stops',
+                    downloads: '324 downloads',
+                  ),
+                  SizedBox(height: 15),
+                  AudioTourItem(
+                    title: 'Art Museum Audio Guide',
+                    rating: 4.6,
+                    duration: '60 min',
+                    steps: '12 stops',
+                    downloads: '156 downloads',
+                  ),
+                  SizedBox(height: 15),
+                  AudioTourItem(
+                    title: 'Hidden Gems Tour',
+                    rating: 4.6,
+                    duration: '40 min',
+                    steps: '10 stops',
+                    downloads: '120 downloads',
+                  ),
+                  SizedBox(height: 15),
+                  AudioTourItem(
+                    title: 'Hidden Gems Tour',
+                    rating: 4.6,
+                    duration: '40 min',
+                    steps: '10 stops',
+                    downloads: '120 downloads',
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
@@ -189,6 +183,8 @@ class GuideLandingScreen extends StatelessWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -223,11 +219,7 @@ class GuideLandingScreen extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.teal : Colors.white54,
-          size: 24,
-        ),
+        Icon(icon, color: isActive ? Colors.teal : Colors.white54, size: 24),
         const SizedBox(height: 4),
         Text(
           label,
@@ -280,10 +272,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],
@@ -338,10 +327,7 @@ class AudioTourItem extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     rating.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -358,10 +344,7 @@ class AudioTourItem extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             downloads,
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 12),
           ),
         ],
       ),
@@ -374,7 +357,7 @@ class InfoChip extends StatelessWidget {
   final String text;
 
   const InfoChip({Key? key, required this.icon, required this.text})
-      : super(key: key);
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -383,10 +366,7 @@ class InfoChip extends StatelessWidget {
       children: [
         Icon(icon, color: Colors.grey[400], size: 14),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-        ),
+        Text(text, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
       ],
     );
   }
