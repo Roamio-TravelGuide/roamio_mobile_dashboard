@@ -87,6 +87,148 @@ class AuthApi {
     }
   }
 
+  /// Logout user
+  Future<Map<String, dynamic>> logout() async {
+    try {
+      final response = await apiClient.post('/auth/logout', {});
+
+      final responseData = json.decode(response.body);
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'data': responseData,
+        'message': responseData['message'] ??
+            (response.statusCode == 200
+                ? 'Logout successful'
+                : 'Logout failed'),
+      };
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'Logout failed: ${error.toString()}',
+        'error': error,
+      };
+    }
+  }
+
+  /// Send OTP for password reset
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await apiClient.post('/auth/forgot-password', {
+        'email': email,
+      });
+
+      final responseData = json.decode(response.body);
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'data': responseData,
+        'message': responseData['message'] ??
+            (response.statusCode == 200
+                ? 'OTP sent successfully'
+                : 'Failed to send OTP'),
+      };
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'Failed to send OTP: ${error.toString()}',
+        'error': error,
+      };
+    }
+  }
+
+  /// Verify OTP
+  Future<Map<String, dynamic>> verifyOTP(String email, String otp) async {
+    try {
+      final response = await apiClient.post('/auth/verify-otp', {
+        'email': email,
+        'otp': otp,
+      });
+
+      final responseData = json.decode(response.body);
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'data': responseData,
+        'message': responseData['message'] ??
+            (response.statusCode == 200
+                ? 'OTP verified successfully'
+                : 'OTP verification failed'),
+      };
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'OTP verification failed: ${error.toString()}',
+        'error': error,
+      };
+    }
+  }
+
+  /// Reset password using OTP
+  Future<Map<String, dynamic>> resetPasswordWithOTP(
+    String email,
+    String otp,
+    String newPassword,
+  ) async {
+    try {
+      final response = await apiClient.post('/auth/reset-password-otp', {
+        'email': email,
+        'otp': otp,
+        'newPassword': newPassword,
+      });
+
+      final responseData = json.decode(response.body);
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'data': responseData,
+        'message': responseData['message'] ??
+            (response.statusCode == 200
+                ? 'Password reset successful'
+                : 'Password reset failed'),
+      };
+    } catch (error) {
+      // If the endpoint wasn't found, try alternate endpoint
+      if (error.toString().contains('404')) {
+        try {
+          final altResponse = await apiClient.post('/auth/reset-password', {
+            'email': email,
+            'otp': otp,
+            'newPassword': newPassword,
+          });
+
+          final altResponseData = json.decode(altResponse.body);
+
+          return {
+            'success': altResponse.statusCode == 200,
+            'statusCode': altResponse.statusCode,
+            'data': altResponseData,
+            'message': altResponseData['message'] ??
+                (altResponse.statusCode == 200
+                    ? 'Password reset successful (alternate endpoint)'
+                    : 'Password reset failed (alternate endpoint)'),
+          };
+        } catch (altError) {
+          return {
+            'success': false,
+            'message': 'Password reset failed (alternate endpoint): ${altError.toString()}',
+            'error': altError,
+          };
+        }
+      }
+
+      return {
+        'success': false,
+        'message': 'Password reset failed: ${error.toString()}',
+        'error': error,
+      };
+    }
+  }
+
   // Save auth data (token + email)
   static Future<void> saveAuthData(String token, String email) async {
     final prefs = await SharedPreferences.getInstance();
