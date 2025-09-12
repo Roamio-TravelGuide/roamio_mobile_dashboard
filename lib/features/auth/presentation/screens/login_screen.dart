@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Email Field
               const Text(
-                'Email or Phone Number',
+                'Email',
                 style: TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 8),
@@ -113,7 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ForgotPasswordScreen(),
+                        builder: (context) =>
+                            ForgotPasswordScreen(authApi: authApi),
                       ),
                     );
                   },
