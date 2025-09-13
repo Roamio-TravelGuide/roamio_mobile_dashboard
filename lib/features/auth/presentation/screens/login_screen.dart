@@ -229,10 +229,14 @@ class _LoginScreenState extends State<LoginScreen> {
         final token = result['data']['token'] ??
             result['data']['accessToken'] ??
             result['data']['access_token'];
-        final userRole = result['data']['user']?['role'];
+        final userData = result['data']['user'] ?? {};
 
-        if (token != null && (userRole == 'traveler' || userRole == 'travel_guide')) {
-          await AuthApi.saveAuthData(token, email);
+        if (token != null && userData['role'] != null && 
+            (userData['role'] == 'traveler' || userData['role'] == 'travel_guide')) {
+          
+          // Save user data including name, email, role, and id
+          await AuthApi.saveAuthData(token, email, userData);
+          
           GoRouter.of(context).go('/home');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['message'] ?? 'Login successful')),

@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/traveller/presentation/screens/package-details.dart';
-import '../features/traveller/presentation/screens/home_screen.dart';
+import '../features/traveller/presentation/screens/home_page.dart';
+import '../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../core/widgets/bottom_navigation.dart';
 
 class MyApp extends StatelessWidget {
@@ -41,7 +42,7 @@ final GoRouter _router = GoRouter(
       path: '/home',
       builder: (context, state) => const ScaffoldWithNavBar(
         currentIndex: 0,
-        child: HomeScreen(),
+        child: HomePage(),
       ),
     ),
     GoRoute(
@@ -55,7 +56,7 @@ final GoRouter _router = GoRouter(
       path: '/add',
       builder: (context, state) => const ScaffoldWithNavBar(
         currentIndex: 2,
-        child: AddScreen(),
+        child: AddHiddenPage(),
       ),
     ),
     GoRoute(

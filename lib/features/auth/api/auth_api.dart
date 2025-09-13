@@ -87,6 +87,94 @@ class AuthApi {
     }
   }
 
+  static Future<void> saveAuthData(
+    String token, 
+    String email, 
+    Map<String, dynamic> userData
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Basic auth info
+    await prefs.setString('authToken', token);
+    await prefs.setString('userEmail', email);
+    
+    // User profile data with null safety
+    await prefs.setInt('userId', userData['id'] ?? 0);
+    await prefs.setString('userName', userData['name'] ?? '');
+    await prefs.setString('userRole', userData['role'] ?? '');
+    await prefs.setString('userStatus', userData['status'] ?? '');
+    
+    // Optional fields
+    if (userData['profile_picture_url'] != null) {
+      await prefs.setString('profilePictureUrl', userData['profile_picture_url']);
+    }
+  }
+
+  // COMPLETE logout - clear ALL auth data
+  static Future<void> clearAuthData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Remove all stored auth data
+    await prefs.remove('authToken');
+    await prefs.remove('userEmail');
+    await prefs.remove('userId');
+    await prefs.remove('userName');
+    await prefs.remove('userRole');
+    await prefs.remove('userStatus');
+    await prefs.remove('profilePictureUrl');
+  }
+
+  // Check if user is logged in
+  static Future<bool> isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+    return token != null && token.isNotEmpty;
+  }
+
+  // Get stored token
+  static Future<String?> getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
+  // Utility methods for easy access to user data
+  static Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('userId');
+  }
+
+  static Future<String?> getUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userRole');
+  }
+
+  static Future<String?> getUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userName');
+  }
+
+  static Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userEmail');
+  }
+
+  static Future<bool> isUserActive() async {
+    final prefs = await SharedPreferences.getInstance();
+    final status = prefs.getString('userStatus');
+    return status == 'active';
+  }
+
+  // Role check helpers
+  static Future<bool> isTraveler() async {
+    final role = await getUserRole();
+    return role == 'traveler';
+  }
+
+  static Future<bool> isTravelGuide() async {
+    final role = await getUserRole();
+    return role == 'travel_guide';
+  }
+
   /// Logout user
   Future<Map<String, dynamic>> logout() async {
     try {
@@ -227,32 +315,5 @@ class AuthApi {
         'error': error,
       };
     }
-  }
-
-  // Save auth data (token + email)
-  static Future<void> saveAuthData(String token, String email) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('authToken', token);
-    await prefs.setString('userEmail', email);
-  }
-
-  // Clear auth data (logout)
-  static Future<void> clearAuthData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('authToken');
-    await prefs.remove('userEmail');
-  }
-
-  // Check if user is logged in
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-    return token != null && token.isNotEmpty;
-  }
-
-  // Get stored token
-  static Future<String?> getAuthToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('authToken');
   }
 }
