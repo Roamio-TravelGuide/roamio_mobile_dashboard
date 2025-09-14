@@ -27,7 +27,7 @@ class DestinationCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9, // Responsive width
+        width: MediaQuery.of(context).size.width * 0.9,
         height: 126,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -36,21 +36,39 @@ class DestinationCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Image on the left
-            Container(
-              width: 126,
-              height: 126,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+            // Image on the left - handle null image
+            if (destination.image != null && destination.image!.isNotEmpty)
+              Container(
+                width: 126,
+                height: 126,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                  ),
+                  image: DecorationImage(
+                    image: NetworkImage(destination.image!),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                image: DecorationImage(
-                  image: NetworkImage(destination.image),
-                  fit: BoxFit.cover,
+              )
+            else
+              Container(
+                width: 126,
+                height: 126,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                  ),
+                  color: Colors.grey.shade800,
+                ),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey,
+                  size: 40,
                 ),
               ),
-            ),
             
             // Details on the right
             Expanded(
@@ -91,17 +109,17 @@ class DestinationCard extends StatelessWidget {
                         const Icon(Icons.star, color: Colors.amber, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          '${destination.rating}',
+                          destination.rating.toStringAsFixed(1),
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 12,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                        const Icon(Icons.reviews, color: Colors.white70, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          '2.4 Km',
+                          '${destination.reviewCount}',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 12,
@@ -121,7 +139,7 @@ class DestinationCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'Completed',
+                            'Active',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 10,
@@ -129,7 +147,7 @@ class DestinationCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          destination.price ?? '',
+                          destination.price,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -149,35 +167,53 @@ class DestinationCard extends StatelessWidget {
   }
 
   Widget _buildPopularDestinationCard(BuildContext context) {
-    return Center( // Wrap with Center widget
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9, // Responsive width
+        width: MediaQuery.of(context).size.width * 0.9,
         height: 300,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: NetworkImage(destination.image),
-            fit: BoxFit.cover,
-          ),
+          // Handle null image for background
+          image: destination.image != null && destination.image!.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(destination.image!),
+                  fit: BoxFit.cover,
+                )
+              : null,
+          color: destination.image == null || destination.image!.isEmpty
+              ? Colors.grey.shade800
+              : null,
         ),
         child: Stack(
           children: [
-            // Gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
-                  stops: const [0.5, 1.0],
+            // Gradient overlay - only show if there's an image
+            if (destination.image != null && destination.image!.isNotEmpty)
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                    stops: const [0.5, 1.0],
+                  ),
                 ),
               ),
-            ),
+            
+            // Placeholder icon if no image
+            if (destination.image == null || destination.image!.isEmpty)
+              Center(
+                child: Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey.shade600,
+                  size: 60,
+                ),
+              ),
             
             // Top badges
             Positioned(
@@ -248,6 +284,8 @@ class DestinationCard extends StatelessWidget {
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -256,6 +294,8 @@ class DestinationCard extends StatelessWidget {
                                   color: Colors.white.withOpacity(0.8),
                                   fontSize: 14,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -264,7 +304,7 @@ class DestinationCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              destination.price ?? '\$15',
+                              destination.price,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -294,17 +334,17 @@ class DestinationCard extends StatelessWidget {
                         const Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '${destination.rating} Rating',
+                          '${destination.rating.toStringAsFixed(1)} Rating',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 12,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                        const Icon(Icons.reviews, color: Colors.white70, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '2.4 Km',
+                          '${destination.reviewCount} Reviews',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 12,
