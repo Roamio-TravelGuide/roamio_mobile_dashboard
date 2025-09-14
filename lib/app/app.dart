@@ -1,13 +1,19 @@
 // app.dart
 import 'package:Roamio/features/auth/presentation/screens/signup_screen.dart';
+import 'package:Roamio/features/traveller/presentation/screens/mytrip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/traveller/presentation/screens/package-details.dart';
+import '../features/traveller/presentation/screens/package-details.dart;
 import '../features/traveller/presentation/screens/home_page.dart';
-import '../features/traveller/presentation/screens/add_hidden_page.dart';
+import'../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../core/widgets/bottom_navigation.dart';
+import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
+
+ 
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -52,13 +58,15 @@ final GoRouter _router = GoRouter(
         child: TravelApp(),
       ),
     ),
-    GoRoute(
-      path: '/add',
-      builder: (context, state) => const ScaffoldWithNavBar(
-        currentIndex: 2,
-        child: AddHiddenPage(),
+GoRoute(
+      path: '/MyTrips',
+      builder: (context, state) =>  ScaffoldWithNavBar(
+        currentIndex: 1,
+        child: MyTrips(),
       ),
     ),
+    
+    
     GoRoute(
       path: '/favorites',
       builder: (context, state) => const ScaffoldWithNavBar(

@@ -31,6 +31,7 @@ class TravelApp extends StatelessWidget {
 }
 
 class DestinationDetailsPage extends StatefulWidget {
+  
   const DestinationDetailsPage({super.key});
 
   @override
@@ -83,6 +84,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     double totalDuration =
         225.0; // total audio duration in seconds (e.g., 3:45)
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true, // let content go behind bottom nav
       body: CustomScrollView(
         slivers: [
@@ -256,132 +258,92 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
 // When user drags the slider
 
 /* ------------------------------ Gallery Page ------------------------------- */
-void _showBuyTourDialog(BuildContext context) {
-  String selectedOption = 'full';
-
+void _showBuyTourDialog(BuildContext parentContext) {
   showDialog(
-    context: context,
+    context: parentContext,
     barrierDismissible: true,
-    builder: (BuildContext ctx) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
+    builder: (BuildContext dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Close button
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  child: Icon(Icons.close, color: Colors.white54, size: 24),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Close button
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Icon(Icons.close, color: Colors.white54, size: 24),
+              const SizedBox(height: 8),
+              // Warning icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF40C4AA).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_outlined,
+                  color: const Color(0xFF40C4AA),
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Warning text
+              Text(
+                'Previews are limited to the first 2 locations. Buy the tour to get access to other locations.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Buy Now button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Close the dialog first
+                    Navigator.of(dialogContext).pop();
+                    // Navigate using the parent screen context
+                    Navigator.of(parentContext).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            CheckoutScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  // Warning icon
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF40C4AA).withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.warning_outlined,
-                      color: const Color(0xFF40C4AA),
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Title text
-                  Text(
-                    'Previews are limited to the first 2 locations. Buy the tour to get access to other location',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Options title
-                  Text(
-                    'Choose how you want to Buy?',
+                  child: Text(
+                    'Buy Now',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Radio options
-                  Column(
-                    children: [
-                      _RadioOption(
-                        value: 'full',
-                        groupValue: selectedOption,
-                        title: 'Full tour',
-                        onChanged: (value) {
-                          setState(() {
-                            selectedOption = value!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _RadioOption(
-                        value: 'custom',
-                        groupValue: selectedOption,
-                        title: 'Custom tour',
-                        onChanged: (value) {
-                          setState(() {
-                            selectedOption = value!;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Buy Now button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close dialog first
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CheckoutScreen(tourType: selectedOption),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Buy Now',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       );
     },
   );
