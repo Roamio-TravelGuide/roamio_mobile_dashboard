@@ -60,47 +60,60 @@ class BottomAudioPlayer extends StatelessWidget {
                 ),
                 child: Text(
                   progressText,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Slider + time labels (only this rebuilds)
+          // Speed control + slider with time labels + replay button
           ValueListenableBuilder<double>(
             valueListenable: currentPositionNotifier,
             builder: (context, currentPosition, _) {
-              return Column(
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Column(
-                        children: const [
-                          Text('1x', style: TextStyle(color: Colors.white, fontSize: 12)),
-                          Text('speed', style: TextStyle(color: Colors.white54, fontSize: 10)),
-                        ],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: const Text(
+                      '1x\nspeed',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        height: 1.2,
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.refresh,
-                          color: Colors.black,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Slider
-                      Expanded(
-                        child: Column(
-                          children: [
-                            SliderTheme(
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Refresh button
+                  Container(
+                    width: 40,
+                    height: 40,
+                    
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  
+                  Expanded(
+                    child: SizedBox(
+                      height: 40, // Match button height for perfect alignment
+                      child: Stack(
+                        children: [
+                          // Slider centered vertically
+                          Align(
+                            alignment: Alignment.center,
+                            child: SliderTheme(
                               data: SliderTheme.of(context).copyWith(
                                 trackHeight: 3,
                                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -116,49 +129,55 @@ class BottomAudioPlayer extends StatelessWidget {
                                 onChanged: onSeek,
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatTime(currentPosition),
-                                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                                  ),
-                                  Text(
-                                    '-${_formatTime(totalDuration - currentPosition)}',
-                                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                                  ),
-                                ],
-                              ),
+                          ),
+                          // Time labels positioned at bottom
+                          Positioned(
+                            bottom: -4,
+                            left: 12,
+                            right: 12,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatTime(currentPosition),
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                ),
+                                Text(
+                                  '-${_formatTime(totalDuration - currentPosition)}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.repeat,
-                          color: Colors.black,
-                          size: 20,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 4),
+                  
+                  // Repeat button
+                  Container(
+                    width: 40,
+                    height: 40,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.black,
+                      size: 20,
+                    ),
                   ),
                 ],
               );
             },
           ),
-
+          
           const SizedBox(height: 20),
 
-          // Play controls
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -171,7 +190,7 @@ class BottomAudioPlayer extends StatelessWidget {
               GestureDetector(
                 onTap: onPlayPause,
                 child: Container(
-                  width: 56,
+                  width: 156,
                   height: 56,
                   decoration: const BoxDecoration(
                     color: Colors.white,
@@ -197,6 +216,7 @@ class BottomAudioPlayer extends StatelessWidget {
     );
   }
 
+  // Helper to format time
   String _formatTime(double seconds) {
     final int mins = seconds ~/ 60;
     final int secs = seconds.toInt() % 60;

@@ -72,7 +72,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/traveller');
+        context.go('/MyTrips');
         break;
       case 2:
         context.go('/add');

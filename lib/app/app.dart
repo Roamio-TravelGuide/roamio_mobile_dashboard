@@ -1,6 +1,11 @@
-import 'package:flutter/foundation.dart'; // for kDebugMode
+// app.dart
+import 'package:Roamio/features/auth/presentation/screens/signup_screen.dart';
+import 'package:Roamio/features/traveller/presentation/screens/mytrip.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../routes/app_router.dart';  
+import 'package:go_router/go_router.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/traveller/presentation/screens/package-details.dart'; // Add your screen import
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -12,7 +17,31 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      routerConfig: router,  
+      routerConfig: _router,
     );
   }
 }
+
+// Define routes with debug redirect
+final GoRouter _router = GoRouter(
+  initialLocation: '/login',
+  redirect: (context, state) {
+    // If in debug mode and trying to go to login, redirect to traveller
+    if (kDebugMode && state.fullPath == '/login') {
+      return '/traveller';
+    }
+    return null; // no redirect otherwise
+  },
+  routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/traveller',
+      builder: (context, state) =>  TravelApp(),
+    ),
+    // Other routes (dashboard, register, etc.)
+  ],
+  // redirect: RouteGuard.checkAuth, // Optional route guard
+);
