@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/screens/login_screen.dart';
+
 import '../features/auth/presentation/screens/signup_screen.dart';
+
+import '../features/traveller/presentation/screens/package-details.dart';
+
 import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip.dart';
 import '../features/traveller/presentation/screens/package-details.dart';
@@ -19,6 +23,7 @@ import '../features/Landing/presentation/screens/select_user.dart';
 import '../features/tourguide/presentation/screens/earnings.dart';
 import '../features/tourguide/presentation/screens/profile.dart';
 import '../features/tourguide/presentation/screens/guide_landing.dart';
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

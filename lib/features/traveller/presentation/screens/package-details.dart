@@ -4,6 +4,7 @@ import 'audioplayer.dart';
 import 'gallery_page.dart';
 import 'mytrip.dart'; // Added import for MyTripScreen
 
+
 void main() {
   runApp(const TravelApp());
 }
