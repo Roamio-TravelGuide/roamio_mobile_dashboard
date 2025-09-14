@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'mytrip.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  final String tourType; // 'full' or 'custom'
-  
-  const CheckoutScreen({
-    Key? key,
-    required this.tourType,
-  }) : super(key: key);
+  const CheckoutScreen({Key? key}) : super(key: key);
 
   @override
   _CheckoutScreenState createState() => _CheckoutScreenState();
@@ -15,25 +10,6 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String selectedPaymentMethod = 'paypal';
-  List<bool> selectedTours = List.generate(5, (index) => false);
-  List<double> tourPrices = [50.0, 75.0, 60.0, 80.0, 45.0]; // Different prices for each tour
-  List<String> tourNames = [
-    'Tanah Lot Temple',
-    'Uluwatu Temple', 
-    'Sacred Monkey Forest',
-    'Tegallalang Rice Terrace',
-    'Mount Batur Sunrise'
-  ];
-
-  double get totalAmount {
-    double total = 0;
-    for (int i = 0; i < selectedTours.length; i++) {
-      if (selectedTours[i]) {
-        total += tourPrices[i];
-      }
-    }
-    return total;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +30,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -72,17 +42,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   // Destination Card
                   _buildDestinationCard(),
                   const SizedBox(height: 24),
-                  
-                  // Content based on tour type
-                  if (widget.tourType == 'full') 
-                    _buildFullTourContent()
-                  else 
-                    _buildCustomTourContent(),
+
+                  // Fixed Payment Amount
+                  Text(
+                    'Payment Amount: \$5',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Payment Method Section
+                  Text(
+                    'Payment Method',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPaymentMethodCard(),
                 ],
               ),
             ),
           ),
-          
+
           // Pay Now Button
           _buildPayNowButton(),
         ],
@@ -94,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:const Color.fromARGB(255, 5, 11, 26) ,
+        color: const Color.fromARGB(255, 5, 11, 26),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -118,8 +105,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   'Ella',
                   style: TextStyle(
                     color: Colors.white,
@@ -127,255 +114,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: Colors.blue,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Badulla,uva',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      '4.5 Rating',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCustomTourContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Payment Amount
-        Text(
-          'Payment Amount : \$${totalAmount.toStringAsFixed(0)}', // Dynamic payment amount
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 24),
-        
-        // Choose your tour section
-        Text(
-          'Choose your tour',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Tour locations
-        ...List.generate(5, (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildTourLocationCard(index), // Pass index to track individual cards
-        )),
-      ],
-    );
-  }
-
-  Widget _buildFullTourContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Payment Amount
-        Text(
-          'Payment Amount : \$5',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 24),
-        
-        // Payment Method section
-        Text(
-          'Payment Method',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // PayPal option
-        _buildPaymentMethodCard(),
-      ],
-    );
-  }
-
-  Widget _buildTourLocationCard(int index) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 5, 11, 26),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left text section
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                SizedBox(height: 4),
                 Text(
-                  tourNames[index],
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  'Badulla, Uva',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    _buildActionButton(Icons.play_arrow, 'Play audio'),
-                    const SizedBox(width: 16),
-                    _buildActionButton(Icons.directions, 'Show directions'),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                RichText(
-                  text: const TextSpan(
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                    children: [
-                      TextSpan(
-                        text:
-                            "Tanah Lot Temple is one of Bali's most iconic landmarks, known for its stunning sea views and cultural significance. ",
-                      ),
-                      TextSpan(
-                        text: 'Read more.....',
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 215, 219, 223),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color.fromARGB(255, 32, 88, 133)),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "\$${tourPrices[index].toStringAsFixed(0)}",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                SizedBox(height: 4),
+                Text(
+                  '4.5 Rating',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-
-          Column(
-            children: [
-              // Checkbox
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedTours[index] = !selectedTours[index];
-                  });
-                },
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  margin: const EdgeInsets.only(bottom: 8, left: 50),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: selectedTours[index] ? const Color.fromARGB(255, 32, 133, 222) : const Color.fromARGB(133, 254, 254, 254),
-                      width: 2, 
-                    ),
-                    borderRadius: BorderRadius.circular(5),
-                    color: selectedTours[index] ? const Color.fromARGB(255, 32, 133, 222) : Colors.transparent,
-                  ),
-                  child: Icon(
-                    Icons.check,
-                    color: selectedTours[index] ? Colors.white : Colors.transparent,
-                    size: 16,
-                  ),
-                ),
-              ),
-              // Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=120&h=120&fit=crop',
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.blue, size: 16),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color.fromARGB(255, 199, 205, 210),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 
@@ -388,7 +141,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       child: Row(
         children: [
-          // PayPal icon
           Container(
             width: 40,
             height: 40,
@@ -403,27 +155,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PayPal',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'daviddasilva@gmail.com',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+          const Expanded(
+            child: Text(
+              'PayPal - daviddasilva@gmail.com',
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
           const Icon(
@@ -442,10 +177,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: () {
-            // Handle payment logic
-            _processPayment();
-          },
+          onPressed: _processPayment,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -480,7 +212,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Green circle with check
               Container(
                 width: 72,
                 height: 72,
@@ -488,15 +219,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   color: Colors.greenAccent.shade400,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.black,
-                  size: 40,
-                ),
+                child: const Icon(Icons.check, color: Colors.black, size: 40),
               ),
               const SizedBox(height: 24),
-
-              // Title
               const Text(
                 "Payment Completed",
                 style: TextStyle(
@@ -507,8 +232,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-
-              // Subtitle
               const Text(
                 "Your payment is successful!\nI hope you are on your way.",
                 style: TextStyle(
@@ -518,8 +241,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-
-              // Continue button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -527,7 +248,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Navigator.of(context).pop(); // Close dialog
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
-                        builder: (context) => MyTripScreen(),
+                        builder: (context) =>  MyTripScreen(),
                       ),
                     );
                   },
