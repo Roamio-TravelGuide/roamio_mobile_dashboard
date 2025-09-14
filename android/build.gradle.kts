@@ -2,10 +2,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        mavenLocal()
-        maven {
-            url("https://repo.repsy.io/mvn/payhere/payhere-mobilesdk-android/")
-        }
     }
 }
 
