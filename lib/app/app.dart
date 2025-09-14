@@ -5,16 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/traveller/presentation/screens/package-details.dart;
+import '../features/traveller/presentation/screens/package-details.dart';
 import '../features/traveller/presentation/screens/home_page.dart';
 import'../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../core/widgets/bottom_navigation.dart';
 import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
-
- 
-
-
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
