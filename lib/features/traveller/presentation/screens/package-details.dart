@@ -31,6 +31,7 @@ class TravelApp extends StatelessWidget {
 }
 
 class DestinationDetailsPage extends StatefulWidget {
+  
   const DestinationDetailsPage({super.key});
 
   @override
@@ -38,32 +39,41 @@ class DestinationDetailsPage extends StatefulWidget {
 }
 
 class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
-  int _currentNav = 0;
   int? currentPlayingIndex;
   bool isPlaying = false;
   ValueNotifier<double> currentPositionNotifier = ValueNotifier(0.0);
   double totalDuration = 225.0; // 3:45 in seconds
 
- void onSeek(double value) {
+  final List<String> stopTitles = [
+    'Tanah Lot Temple',
+    'Sacred Water Temple',
+    'Mountain View Point',
+    'Traditional Market',
+    'Sunset Beach',
+  ];
+
+  void onSeek(double value) {
     currentPositionNotifier.value = value;
     // If using an actual audio player, seek to position:
     // audioPlayer.seek(Duration(seconds: value.toInt()));
   }
+
   @override
   void dispose() {
     currentPositionNotifier.dispose();
     super.dispose();
   }
+
   static const heroImage =
       'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop';
 
   static const tanahLotPhotos = <String>[
     'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1483683804023-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1483683804023-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1494475673545-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1482192505345-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1482192505345-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
   ];
 
   @override
@@ -71,8 +81,10 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     final cs = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     double currentPosition = 0.0; // current slider position in seconds
-    double totalDuration = 225.0; // total audio duration in seconds (e.g., 3:45)
+    double totalDuration =
+        225.0; // total audio duration in seconds (e.g., 3:45)
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true, // let content go behind bottom nav
       body: CustomScrollView(
         slivers: [
@@ -102,18 +114,22 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                         child: Center(
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                             strokeWidth: 2,
                           ),
                         ),
                       );
                     },
-                    errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade700),
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: Colors.grey.shade700),
                   ),
                   const _TopToBottomShade(),
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 8, // below status bar
+                    top:
+                        MediaQuery.of(context).padding.top +
+                        8, // below status bar
                     left: 12,
                     right: 12,
                     child: Row(
@@ -174,7 +190,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: tanahLotPhotos.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) => _GalleryThumb(url: tanahLotPhotos[index]),
+                    itemBuilder: (context, index) =>
+                        _GalleryThumb(url: tanahLotPhotos[index]),
                   ),
                 ),
 
@@ -199,13 +216,14 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _AudioCard(
-                          title: 'Tamil Lal Temple',
+                          title: stopTitles[index],
                           description:
-                              'Tamil Lal Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
+                              'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
                           image: tanahLotPhotos[index % tanahLotPhotos.length],
                           index: index,
                           onPlayAudio: () => _onPlayAudio(index),
-                          isCurrentlyPlaying: currentPlayingIndex == index && isPlaying,
+                          isCurrentlyPlaying:
+                              currentPlayingIndex == index && isPlaying,
                         ),
                       );
                     }),
@@ -215,112 +233,6 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
             ),
           ),
         ],
-      ),
-
-      // Bottom controls
-      bottomNavigationBar: SafeArea(
-        top: false,
-        bottom: false,
-        child: Stack(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: SizedBox(
-                    height: 52,
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () {},
-                      child: const Text('Start a Trip'),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                  child: Container(
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _NavItem(
-                          icon: Icons.explore_outlined,
-                          label: 'Explore',
-                          selected: _currentNav == 0,
-                          onTap: () => setState(() => _currentNav = 0),
-                        ),
-                        _NavItem(
-                          icon: Icons.favorite_outline,
-                          label: 'Saved',
-                          selected: _currentNav == 1,
-                          onTap: () => setState(() => _currentNav = 1),
-                        ),
-                        _NavItem(
-                          icon: Icons.calendar_month_outlined,
-                          label: 'Trips',
-                          selected: _currentNav == 2,
-                          onTap: () => setState(() => _currentNav = 2),
-                        ),
-                        _NavItem(
-                          icon: Icons.person_outline,
-                          label: 'Profile',
-                          selected: _currentNav == 3,
-                          onTap: () => setState(() => _currentNav = 3),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (currentPlayingIndex != null && isPlaying)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: BottomAudioPlayer(
-                    title: 'Tamil Lal Temple',
-                    onPlayPause: () {
-                      setState(() {
-                        isPlaying = !isPlaying;
-                      });
-                    },
-                    onStop: () {
-                      setState(() {
-                        currentPlayingIndex = null;
-                        isPlaying = false;
-                      });
-                    },
-                    onNext: () {}, // provide actual logic
-                    onPrevious: () {
-                      // logic to go to previous track
-                    },
-                    onSeek: onSeek, // function to handle slider changes
-                    isPlaying: isPlaying, // bool variable in your state
-                    currentPositionNotifier: currentPositionNotifier, 
-                    totalDuration: totalDuration, // double variable for max slider value
-                    progressText: '0:00 / 3:45',
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -346,137 +258,92 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
 // When user drags the slider
 
 /* ------------------------------ Gallery Page ------------------------------- */
-void _showBuyTourDialog(BuildContext context) {
-  String selectedOption = 'full';
-
+void _showBuyTourDialog(BuildContext parentContext) {
   showDialog(
-    context: context,
+    context: parentContext,
     barrierDismissible: true,
-    builder: (BuildContext ctx) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
+    builder: (BuildContext dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Close button
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  child: Icon(Icons.close, color: Colors.white54, size: 24),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Close button
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.white54,
-                        size: 24,
+              const SizedBox(height: 8),
+              // Warning icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF40C4AA).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_outlined,
+                  color: const Color(0xFF40C4AA),
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Warning text
+              Text(
+                'Previews are limited to the first 2 locations. Buy the tour to get access to other locations.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Buy Now button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Close the dialog first
+                    Navigator.of(dialogContext).pop();
+                    // Navigate using the parent screen context
+                    Navigator.of(parentContext).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            CheckoutScreen(),
                       ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  // Warning icon
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF40C4AA).withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.warning_outlined,
-                      color: const Color(0xFF40C4AA),
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Title text
-                  Text(
-                    'Previews are limited to the first 2 locations. Buy the tour to get access to other location',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Options title
-                  Text(
-                    'Choose how you want to Buy?',
+                  child: Text(
+                    'Buy Now',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Radio options
-                  Column(
-                    children: [
-                      _RadioOption(
-                        value: 'full',
-                        groupValue: selectedOption,
-                        title: 'Full tour',
-                        onChanged: (value) {
-                          setState(() {
-                            selectedOption = value!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _RadioOption(
-                        value: 'custom',
-                        groupValue: selectedOption,
-                        title: 'Custom tour',
-                        onChanged: (value) {
-                          setState(() {
-                            selectedOption = value!;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Buy Now button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close dialog first
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => CheckoutScreen(
-                              tourType: selectedOption,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Buy Now',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       );
     },
   );
@@ -549,11 +416,17 @@ class _EllaDetailsSection extends StatelessWidget {
             const SizedBox(width: 6),
             const Icon(Icons.star, color: Colors.amber, size: 14),
             const SizedBox(width: 4),
-            const Text('4.6', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            const Text(
+              '4.6',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            ),
             const SizedBox(width: 2),
             Text(
               '/5 (Reviews)',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
@@ -603,8 +476,11 @@ class _EllaDetailsSection extends StatelessWidget {
               onTap: () {},
               child: Row(
                 children: [
-                  Icon(Icons.subdirectory_arrow_right,
-                      color: Colors.blue, size: 14),
+                  Icon(
+                    Icons.subdirectory_arrow_right,
+                    color: Colors.blue,
+                    size: 14,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Show map',
@@ -627,7 +503,10 @@ class _EllaDetailsSection extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.blue, width: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -722,7 +601,7 @@ class _InfoColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: const Color.fromARGB(179, 245, 245, 245), size: 20),
+        Icon(icon, color: Colors.blue, size: 20),
         const SizedBox(height: 4),
         Text(
           title,
@@ -853,7 +732,8 @@ class _AudioCard extends StatelessWidget {
                   ),
                 );
               },
-              errorBuilder: (_, __, ___) => Container(width: 60, height: 60, color: Colors.grey.shade700),
+              errorBuilder: (_, __, ___) =>
+                  Container(width: 60, height: 60, color: Colors.grey.shade700),
             ),
           ),
         ],
@@ -886,8 +766,8 @@ class _ActionButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.blue,
-              fontSize: 13,
+              color: const Color.fromARGB(255, 193, 198, 202),
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -906,7 +786,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
+    final text = Theme.of(
+      context,
+    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -962,48 +844,6 @@ class _GalleryThumb extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final color = selected ? cs.primary : Colors.white70;
-    return InkWell(
-      borderRadius: BorderRadius.circular(28),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 22, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _RadioOption extends StatelessWidget {
   final String value;
   final String groupValue;
@@ -1029,13 +869,7 @@ class _RadioOption extends StatelessWidget {
             onChanged: onChanged,
             activeColor: Colors.blue,
           ),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
+          Text(title, style: TextStyle(color: Colors.white, fontSize: 16)),
         ],
       ),
     );
