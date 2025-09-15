@@ -24,7 +24,6 @@ import '../features/tourguide/presentation/screens/earnings.dart';
 import '../features/tourguide/presentation/screens/profile.dart';
 import '../features/tourguide/presentation/screens/guide_landing.dart';
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -47,9 +46,18 @@ final GoRouter _router = GoRouter(
     GoRoute(path: '/intro1', builder: (context, state) => const Intro1Screen()),
     GoRoute(path: '/intro2', builder: (context, state) => const Intro2Screen()),
     GoRoute(path: '/intro3', builder: (context, state) => const Intro3Screen()),
-    GoRoute(path: '/selectUser', builder: (context, state) => const SelectUserScreen()),
-    GoRoute(path: '/guideLanding', builder: (context, state) => const GuideLandingScreen()),
-    GoRoute(path: '/earnings', builder: (context, state) => const EarningsScreen()),
+    GoRoute(
+      path: '/selectUser',
+      builder: (context, state) => const SelectUserScreen(),
+    ),
+    GoRoute(
+      path: '/guideLanding',
+      builder: (context, state) => const GuideLandingScreen(),
+    ),
+    GoRoute(
+      path: '/earnings',
+      builder: (context, state) => const EarningsScreen(),
+    ),
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
 
     // Screens with bottom navigation
@@ -78,7 +86,6 @@ final GoRouter _router = GoRouter(
       builder: (context, state) =>
           const ScaffoldWithNavBar(currentIndex: 4, child: ProfileScreen()),
     ),
-
   ],
 
   // Error page for unknown routes
