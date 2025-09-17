@@ -3,6 +3,7 @@ import 'restaurant_detail.dart';
 import 'audioplayer.dart';
 
 class MyTripScreen extends StatefulWidget {
+    const MyTripScreen({super.key});
   @override
   _MyTripScreenState createState() => _MyTripScreenState();
 }

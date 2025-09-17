@@ -1,17 +1,22 @@
-// features/traveller/presentation/widgets/bottom_navigation.dart
+// core/widgets/bottom_navigation.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../routes/app_router.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
+  final String userRole;
 
   const CustomBottomNavigationBar({
     Key? key,
     required this.currentIndex,
+    required this.userRole,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isGuide = userRole == 'travel_guide';
+    
     return Container(
       height: 80,
       decoration: BoxDecoration(
@@ -23,66 +28,95 @@ class CustomBottomNavigationBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          // Home
           _NavItem(
             Icons.home_outlined,
             'Home',
-            currentIndex == 0,
-            onTap: () => _navigateTo(context, 0),
+            currentIndex == AppRoutes.homeTab,
+            onTap: () => _navigateToHome(context),
           ),
+          
+          // My Trips
           _NavItem(
             Icons.location_on,
             'My Trip',
-            currentIndex == 1,
-            onTap: () => _navigateTo(context, 1),
+            currentIndex == AppRoutes.myTripsTab,
+            onTap: () => _navigateToMyTrips(context),
           ),
-          GestureDetector(
-            onTap: () => _navigateTo(context, 2),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+          
+          // Add for traveler, or empty space for guide
+          if (isGuide)
+            const SizedBox(width: 48) // Empty space to maintain layout
+          else
+            GestureDetector(
+              onTap: () => context.go(AppRoutes.addHiddenPage),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 24),
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 24),
             ),
-          ),
-          _NavItem(
-            Icons.favorite_outline,
-            'Favorite',
-            currentIndex == 3,
-            onTap: () => _navigateTo(context, 3),
-          ),
+          
+          // Favorites for traveler, Earnings for guide
+          isGuide
+            ? _NavItem(
+                Icons.attach_money,
+                'Earnings',
+                currentIndex == AppRoutes.earningsTab,
+                onTap: () => _navigateToEarnings(context),
+              )
+            : _NavItem(
+                Icons.favorite_outline,
+                'Favorite',
+                currentIndex == AppRoutes.favoritesTab,
+                onTap: () => _navigateToFavorites(context),
+              ),
+          
+          // Profile
           _NavItem(
             Icons.person_outline,
             'Profile',
-            currentIndex == 4,
-            onTap: () => _navigateTo(context, 4),
+            currentIndex == AppRoutes.profileTab,
+            onTap: () => _navigateToProfile(context),
           ),
         ],
       ),
     );
   }
 
-  void _navigateTo(BuildContext context, int index) {
-    if (index == currentIndex) return; // Already on this screen
-    
-    switch (index) {
-      case 0:
-        context.go('/home');
-        break;
-      case 1:
-        context.go('/MyTrips');
-        break;
-      case 2:
-        context.go('/add');
-        break;
-      case 3:
-        context.go('/favorites');
-        break;
-      case 4:
-        context.go('/profile');
-        break;
+  void _navigateToHome(BuildContext context) {
+    if (userRole == 'travel_guide') {
+      context.go('${AppRoutes.guide}/${AppRoutes.guideHome}');
+    } else {
+      context.go('${AppRoutes.traveler}/${AppRoutes.travelerHome}');
+    }
+  }
+
+  void _navigateToMyTrips(BuildContext context) {
+    if (userRole == 'travel_guide') {
+      context.go('${AppRoutes.guide}/${AppRoutes.guideMyTrips}');
+    } else {
+      context.go('${AppRoutes.traveler}/${AppRoutes.travelerMyTrips}');
+    }
+  }
+
+  void _navigateToFavorites(BuildContext context) {
+    context.go('${AppRoutes.traveler}/${AppRoutes.travelerFavorites}');
+  }
+
+  void _navigateToEarnings(BuildContext context) {
+    context.go('${AppRoutes.guide}/${AppRoutes.guideEarnings}');
+  }
+
+  void _navigateToProfile(BuildContext context) {
+    if (userRole == 'travel_guide') {
+      context.go('${AppRoutes.guide}/${AppRoutes.guideProfile}');
+    } else {
+      context.go('${AppRoutes.traveler}/${AppRoutes.travelerProfile}');
     }
   }
 }
