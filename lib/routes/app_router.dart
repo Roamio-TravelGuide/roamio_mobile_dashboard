@@ -1,17 +1,65 @@
+// app_router.dart
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import './route_guard.dart';
+import '../features//auth/api/auth_api.dart';
+
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
-import 'route_guard.dart';
+import '../features/Landing/presentation/screens/intro_1.dart';
+import '../features/Landing/presentation/screens/intro_2.dart';
+import '../features/Landing/presentation/screens/intro_3.dart';
+import '../features/Landing/presentation/screens/select_user.dart';
+
+import '../features/tourguide/presentation/screens/guide_landing.dart';
+import '../features/tourguide/presentation/screens/earnings.dart';
+import '../features/tourguide/presentation/screens/profile.dart';
+
+import '../features/traveller/presentation/screens/home_page.dart';
+import '../features/traveller/presentation/screens/mytrip.dart';
+import '../features/traveller/presentation/screens/add_hidden_page.dart';
+import '../core/widgets/bottom_navigation.dart';
 
 class AppRoutes {
+  // Auth routes
   static const String login = '/login';
   static const String signUp = '/signup';
-  static const String dashboard = '/dashboard';
+  
+  // Landing routes
+  static const String intro1 = '/intro1';
+  static const String intro2 = '/intro2';
+  static const String intro3 = '/intro3';
+  static const String selectUser = '/selectUser';
+  
+  // Tour Guide routes
+  static const String guide = '/guide';
+  static const String guideHome = 'home';
+  static const String guideMyTrips = 'myTrips';
+  static const String guideEarnings = 'earnings';
+  static const String guideProfile = 'profile';
+  
+  // Traveler routes
+  static const String traveler = '/traveler';
+  static const String travelerHome = 'home';
+  static const String travelerMyTrips = 'myTrips';
+  static const String travelerFavorites = 'favorites';
+  static const String travelerProfile = 'profile';
+  
+  // Common routes
+  static const String addHiddenPage = '/addHiddenPage';
+  
+  // Bottom navigation indices
+  static const int homeTab = 0;
+  static const int myTripsTab = 1;
+  static const int favoritesTab = 2;
+  static const int earningsTab = 2; // For guide, this replaces favorites
+  static const int profileTab = 3;
 }
 
-final router = GoRouter(
+final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.login,
   routes: [
+    // Auth routes
     GoRoute(
       path: AppRoutes.login,
       builder: (_, __) => const LoginScreen(),
@@ -20,9 +68,167 @@ final router = GoRouter(
       path: AppRoutes.signUp,
       builder: (_, __) => const SignUpScreen(),
     ),
+    
+    // Landing routes
     GoRoute(
-      path: AppRoutes.dashboard,
-      redirect: RouteGuard.redirectIfNotAuth,
+      path: AppRoutes.intro1,
+      builder: (_, __) => const Intro1Screen(),
+    ),
+    GoRoute(
+      path: AppRoutes.intro2,
+      builder: (_, __) => const Intro2Screen(),
+    ),
+    GoRoute(
+      path: AppRoutes.intro3,
+      builder: (_, __) => const Intro3Screen(),
+    ),
+    GoRoute(
+      path: AppRoutes.selectUser,
+      builder: (_, __) => const SelectUserScreen(),
+    ),
+    
+    // Add Hidden Page (common for both roles)
+    GoRoute(
+      path: AppRoutes.addHiddenPage,
+      builder: (_, __) => const AddHiddenPage(),
+    ),
+    
+    // Tour Guide tabbed navigation
+    ShellRoute(
+      builder: (context, state, child) {
+        // Determine current index based on route path
+        int currentIndex = _getGuideCurrentIndex(state.uri.path);
+        return FutureBuilder<String?>(
+          future: AuthApi.getUserRole(),
+          builder: (context,snapshot){
+            final role = snapshot.data ?? 'traveler';
+            return Scaffold(
+              body: child,
+              bottomNavigationBar: CustomBottomNavigationBar(currentIndex: currentIndex, userRole: role),
+            );
+          },
+        );
+      },
+      routes: [
+        // Guide home is now the default route under /guide
+        GoRoute(
+          path: '${AppRoutes.guide}/${AppRoutes.guideHome}',
+          builder: (_, __) => const GuideLandingScreen(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.guide}/${AppRoutes.guideMyTrips}',
+          builder: (_, __) => const MyTripScreen(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.guide}/${AppRoutes.guideEarnings}',
+          builder: (_, __) => const EarningsScreen(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.guide}/${AppRoutes.guideProfile}',
+          builder: (_, __) => const ProfilePage(),
+        ),
+      ],
+    ),
+    
+    // Traveler tabbed navigation
+    ShellRoute(
+      builder: (context, state, child) {
+        // Determine current index based on route path
+        int currentIndex = _getTravelerCurrentIndex(state.uri.path);
+        return FutureBuilder<String?>(
+          future: AuthApi.getUserRole(),
+          builder: (context,snapshot){
+            final role = snapshot.data ?? 'traveler';
+            return Scaffold(
+              body: child,
+              bottomNavigationBar: CustomBottomNavigationBar(currentIndex: currentIndex, userRole: role),
+            );
+          },
+        );
+      },
+      routes: [
+        // Traveler home is now the default route under /traveler
+        GoRoute(
+          path: '${AppRoutes.traveler}/${AppRoutes.travelerHome}',
+          builder: (_, __) => const HomePage(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.traveler}/${AppRoutes.travelerMyTrips}',
+          builder: (_, __) => const MyTripScreen(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.traveler}/${AppRoutes.travelerFavorites}',
+          builder: (_, __) => const FavoritesScreen(),
+        ),
+        GoRoute(
+          path: '${AppRoutes.traveler}/${AppRoutes.travelerProfile}',
+          builder: (_, __) => const ProfilePage(),
+        ),
+      ],
     ),
   ],
+  
+  redirect: (context, state) async {
+    // Check both authentication and role-based redirection
+    final authRedirect = await RouteGuard.redirectIfNotAuth(context, state);
+    if (authRedirect != null) return authRedirect;
+    
+    final roleRedirect = await RouteGuard.redirectIfAuth(context, state);
+    return roleRedirect;
+  },
+  
+  errorBuilder: (context, state) => Scaffold(
+    appBar: AppBar(title: const Text('404 - Page Not Found')),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Page not found: ${state.uri}',
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () async {
+              final role = await AuthApi.getUserRole(); // Use AuthApi instead of StorageHelper
+              if (role == 'travel_guide') {
+                context.go('${AppRoutes.guide}/${AppRoutes.guideHome}');
+              } else {
+                context.go('${AppRoutes.traveler}/${AppRoutes.travelerHome}');
+              }
+            },
+            child: const Text('Go Home'),
+          ),
+        ],
+      ),
+    ),
+  ),
 );
+
+int _getTravelerCurrentIndex(String path) {
+  if (path.endsWith(AppRoutes.travelerHome)) return AppRoutes.homeTab;
+  if (path.endsWith(AppRoutes.travelerMyTrips)) return AppRoutes.myTripsTab;
+  if (path.endsWith(AppRoutes.travelerFavorites)) return AppRoutes.favoritesTab;
+  if (path.endsWith(AppRoutes.travelerProfile)) return AppRoutes.profileTab;
+  return AppRoutes.homeTab; // Default to home
+}
+
+int _getGuideCurrentIndex(String path) {
+  if (path.endsWith(AppRoutes.guideHome)) return AppRoutes.homeTab;
+  if (path.endsWith(AppRoutes.guideMyTrips)) return AppRoutes.myTripsTab;
+  if (path.endsWith(AppRoutes.guideEarnings)) return AppRoutes.earningsTab;
+  if (path.endsWith(AppRoutes.guideProfile)) return AppRoutes.profileTab;
+  return AppRoutes.homeTab; // Default to home
+}
+
+// Placeholder screen for favorites
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Favorites Screen')),
+    );
+  }
+}

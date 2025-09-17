@@ -6,6 +6,7 @@ import '../../../../core/widgets/text_fields/custom_text_field.dart';
 import 'package:go_router/go_router.dart';
 import 'signup_screen.dart';
 import 'forgotpassword_screen.dart';
+import '../../../../routes/app_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -236,11 +237,20 @@ class _LoginScreenState extends State<LoginScreen> {
           
           // Save user data including name, email, role, and id
           await AuthApi.saveAuthData(token, email, userData);
+
           
-          GoRouter.of(context).go('/home');
+          if (userData['role'] == 'travel_guide') {
+            print('Navigating to: ${AppRoutes.guide}/${AppRoutes.guideHome}');
+            GoRouter.of(context).go('${AppRoutes.guide}/${AppRoutes.guideHome}');
+          } else {
+            print('Navigating to: ${AppRoutes.traveler}/${AppRoutes.travelerHome}');
+            GoRouter.of(context).go('${AppRoutes.traveler}/${AppRoutes.travelerHome}');
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['message'] ?? 'Login successful')),
           );
+
         } else if (token != null) {
           // Token received but role is not allowed
           ScaffoldMessenger.of(context).showSnackBar(

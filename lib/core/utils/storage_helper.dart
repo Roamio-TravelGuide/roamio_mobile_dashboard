@@ -11,6 +11,10 @@ class StorageHelper {
     return await _storage.read(key: 'auth_token');
   }
 
+  static Future<String?> getUserRole() async {
+    return await _storage.read(key: 'role');
+  }
+
   static Future<void> deleteToken() async {
     await _storage.delete(key: 'auth_token');
   }
