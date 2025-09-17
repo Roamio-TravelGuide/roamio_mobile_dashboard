@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
     if (response['success'] == true) {
       if (response['data'] != null && response['data']['packages'] != null) {
         final tourData = response['data']['packages'] as List<dynamic>;
-        print('Found ${tourData.length} tours');
+        // print('Found ${tourData.length} tours');
         
         // Convert API data to Destination objects
         List<Destination> allTours = tourData.map((tour) {
