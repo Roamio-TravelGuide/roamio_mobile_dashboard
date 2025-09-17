@@ -1,5 +1,9 @@
+// lib/features/traveller/presentation/screens/package_checkout.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'mytrip.dart';
+import '../../../../core/config/env_config.dart';
+import '../../api/payment_api.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -10,6 +14,15 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String selectedPaymentMethod = 'paypal';
+  bool _isProcessing = false;
+  late PaymentApi paymentApi;
+
+  @override
+  void initState() {
+    super.initState();
+    Stripe.publishableKey = EnvConfig.stripePublishableKey;
+    paymentApi = PaymentApi();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: _processPayment,
+          onPressed: _isProcessing ? null : _processPayment,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -185,20 +198,68 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Pay Now',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          child: _isProcessing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text(
+                  'Pay Now',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         ),
       ),
     );
   }
 
-  void _processPayment() {
+  Future<void> _processPayment() async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // 1. Create a payment intent on the server
+      final paymentIntent = await paymentApi.createPaymentIntent(
+        5.0, // Your fixed amount
+        'usd',
+        {
+          'userId': 'user-id-here', // You should get this from your auth system
+          'destination': 'Ella, Badulla, Uva',
+        },
+      );
+
+      // 2. Initialize the payment sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntent['clientSecret'],
+          merchantDisplayName: 'Roamio',
+        ),
+      );
+      
+      // 3. Display the payment sheet
+      await Stripe.instance.presentPaymentSheet();
+      
+      // 4. Show success dialog
+      _showSuccessDialog();
+    } catch (e) {
+      // Handle payment failure
+      _showErrorDialog(e.toString());
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -271,6 +332,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          "Payment Failed",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          error,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              "OK",
+              style: TextStyle(color: Colors.blue),
+            ),
+          ),
+        ],
       ),
     );
   }

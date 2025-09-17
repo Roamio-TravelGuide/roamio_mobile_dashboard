@@ -1,12 +1,12 @@
 // app.dart
 import 'package:Roamio/features/auth/presentation/screens/signup_screen.dart';
-import 'package:Roamio/features/traveller/presentation/screens/mytrip.dart';
+//import 'package:Roamio/features/traveller/presentation/screens/mytrip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/traveller/presentation/screens/package-details.dart';
-import '../features/traveller/presentation/screens/home_screen.dart';
+import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
 import '../core/widgets/bottom_navigation.dart';
 
@@ -43,7 +43,7 @@ final GoRouter _router = GoRouter(
       path: '/home',
       builder: (context, state) => const ScaffoldWithNavBar(
         currentIndex: 0,
-        child: HomeScreen(),
+        child: HomePage(),
       ),
     ),
     GoRoute(
