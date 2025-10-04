@@ -5,7 +5,6 @@ import 'login_screen.dart';
 import '../../../../core/api/api_client.dart';
 import '../../api/auth_api.dart';
 import '../../../../core/config/env_config.dart';
-import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -23,19 +22,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _selectedRole = 'traveler';
   late final ApiClient apiClient;
   late final AuthApi authApi;
+  
   @override
   void initState() {
     super.initState();
     apiClient = ApiClient(customBaseUrl: EnvConfig.baseUrl);
     authApi = AuthApi(apiClient: apiClient);
   }
+  
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0D0D12),
+      backgroundColor: const Color(0xFF0D0D12),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -44,7 +46,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               const SizedBox(height: 40),
 
-            
               // Header
               Text(
                 'Create Account',
@@ -63,7 +64,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 40),
 
               // Name Field
-              Text(
+              const Text(
                 'Full Name',
                 style: TextStyle(color: Colors.white),
               ),
@@ -81,6 +82,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 24),
 
               // Email Field
+              const Text(
+                'Email',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
               CustomTextField(
                 controller: _emailController,
                 hintText: 'Enter your email',
@@ -95,7 +101,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 24),
 
               // Phone Number Field
-              Text(
+              const Text(
                 'Phone Number',
                 style: TextStyle(color: Colors.white),
               ),
@@ -114,6 +120,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 24),
 
               // Password Field
+              const Text(
+                'Password',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
               CustomTextField(
                 controller: _passwordController,
                 hintText: 'Enter your password',
@@ -139,6 +150,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 24),
 
               // Confirm Password Field
+              const Text(
+                'Confirm Password',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
               CustomTextField(
                 controller: _confirmPasswordController,
                 hintText: 'Re-enter your password',
@@ -165,15 +181,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               // Sign Up Button
               SizedBox(
-                width: double.infinity, // Takes full available width
-                height: 40, // Fixed height
+                width: double.infinity,
+                height: 40,
                 child: MaterialButton(
-                  onPressed: _handleSignUp,
+                  onPressed: _isLoading ? null : _handleSignUp,
                   color: Colors.white,
                   textColor: Colors.black,
-                  child: Text("SignUp",style: TextStyle(),),
+                  disabledColor: Colors.grey,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text("Sign Up"),
                   shape: RoundedRectangleBorder(
-                    // For rounded corners
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
@@ -192,14 +217,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                     ),
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(),
+                                ),
+                              );
+                            },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -222,12 +249,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  void _handleSignUp() {
+  Future<void> _handleSignUp() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-  final phone = _phoneController.text.trim();
-  final password = _passwordController.text.trim();
-  final confirmPassword = _confirmPasswordController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -243,23 +270,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    authApi.signup(
-      email: email,
-      password: password,
-      name: name,
-      role: _selectedRole,
-      phoneNo: phone,
-    ).then((result) {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await authApi.signup(
+        email: email,
+        password: password,
+        name: name,
+        role: _selectedRole,
+        phoneNo: phone,
+      );
+      
       print('Signup API result: $result');
+      
       if (result['success'] == true) {
         print('Signup successful, redirecting to login...');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? 'Signup successful')),
         );
-        Future.delayed(const Duration(seconds: 1), () {
-          print('Redirecting to /login');
-          GoRouter.of(context).go('/login');
-        });
+        
+        // Navigate to login screen after successful signup
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+            ),
+          );
+        }
       } else {
         String errorMsg = result['message'] ?? 'Signup failed';
         if (result['statusCode'] == 400 || result['statusCode'] == 409) {
@@ -270,21 +310,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
           SnackBar(content: Text(errorMsg)),
         );
       }
-    }).catchError((error) {
+    } catch (error) {
       print('Signup error: $error');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: \\${error.toString()}')),
+        SnackBar(content: Text('An error occurred: ${error.toString()}')),
       );
-    });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-  _nameController.dispose();
-  _emailController.dispose();
-  _phoneController.dispose();
-  _passwordController.dispose();
-  _confirmPasswordController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }

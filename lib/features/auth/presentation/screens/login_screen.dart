@@ -3,6 +3,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/config/env_config.dart';
 import '../../api/auth_api.dart';
 import '../../../../core/widgets/text_fields/custom_text_field.dart';
+import '../../../../core/utils/storage_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'signup_screen.dart';
 import 'forgotpassword_screen.dart';
@@ -235,16 +236,18 @@ class _LoginScreenState extends State<LoginScreen> {
         if (token != null && userData['role'] != null && 
             (userData['role'] == 'traveler' || userData['role'] == 'travel_guide')) {
           
-          // Save user data including name, email, role, and id
+          // Save user data in both AuthApi and StorageHelper
           await AuthApi.saveAuthData(token, email, userData);
+          await StorageHelper.saveToken(token);
 
+          // Use GoRouter.of(context) for navigation
+          final String route = userData['role'] == 'travel_guide' 
+              ? '${AppRoutes.guide}/${AppRoutes.guideHome}'
+              : '${AppRoutes.traveler}/${AppRoutes.travelerHome}';
           
-          if (userData['role'] == 'travel_guide') {
-            print('Navigating to: ${AppRoutes.guide}/${AppRoutes.guideHome}');
-            GoRouter.of(context).go('${AppRoutes.guide}/${AppRoutes.guideHome}');
-          } else {
-            print('Navigating to: ${AppRoutes.traveler}/${AppRoutes.travelerHome}');
-            GoRouter.of(context).go('${AppRoutes.traveler}/${AppRoutes.travelerHome}');
+          if (context.mounted) {
+            print('Navigating to: $route');
+            context.go(route);
           }
 
           ScaffoldMessenger.of(context).showSnackBar(
