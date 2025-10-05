@@ -63,7 +63,24 @@ class TravellerApi {
       return _getSampleResponse();
     }
   }
-
+Future<Map<String, dynamic>> getMyTrips() async {
+  try {
+    final response = await apiClient.get('/payment/my-trips');
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to load my trips: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching my trips: $error');
+    return {'success': false, 'data': null, 'message': error.toString()};
+  }
+}
   // Fallback sample response for debugging
   Map<String, dynamic> _getSampleResponse() {
     return {

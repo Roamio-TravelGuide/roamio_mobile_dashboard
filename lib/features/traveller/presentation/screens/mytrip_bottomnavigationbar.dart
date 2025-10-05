@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package-details.dart'; // <-- Import your details page
+import 'package:Roamio/core/config/env_config.dart';
+import 'package:Roamio/core/api/api_client.dart';
+import '../../api/traveller_api.dart';
+// TODO: Replace with your actual details page import
+import 'package-details.dart';
 
 class TravelPackage {
   final String id;
@@ -37,48 +41,65 @@ class MyTrips extends StatefulWidget {
   const MyTrips({Key? key}) : super(key: key);
 
   @override
-  State<MyTrips> createState() => _TravelPackagesScreenState();
+  _MyTripsState createState() => _MyTripsState();
 }
 
-class _TravelPackagesScreenState extends State<MyTrips> {
-  List<TravelPackage> packages = [
-    TravelPackage(
-      id: "1",
-      title: "Tropical Paradise Getaway",
-      destination: "Maldives",
-      price: 2499,
-      image: "assets/images/tropical-maldives-resort.jpg",
-      isDownloaded: true,
-      description: "Experience luxury overwater bungalows and pristine beaches",
-    ),
-    TravelPackage(
-      id: "2",
-      title: "European Cultural Tour",
-      destination: "Italy & France",
-      price: 3299,
-      image: "assets/images/european-cities-italy-france.jpg",
-      isDownloaded: false,
-      description: "Explore historic cities, art museums, and culinary delights",
-    ),
-    TravelPackage(
-      id: "3",
-      title: "Adventure Mountain Trek",
-      destination: "Nepal Himalayas",
-      price: 1899,
-      image: "assets/images/himalayan-mountain-trek-nepal.jpg",
-      isDownloaded: true,
-      description: "Challenge yourself with breathtaking mountain views",
-    ),
-    TravelPackage(
-      id: "4",
-      title: "Safari Wildlife Experience",
-      destination: "Kenya & Tanzania",
-      price: 2799,
-      image: "assets/images/african-safari-wildlife-kenya.jpg",
-      isDownloaded: false,
-      description: "Witness the Great Migration and Big Five animals",
-    ),
-  ];
+class _MyTripsState extends State<MyTrips> {
+  List<TravelPackage> packages = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMyTrips();
+  }
+
+  Future<void> _fetchMyTrips() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+    try {
+      final travellerApi = TravellerApi(
+        apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl),
+      );
+      final response = await travellerApi.getMyTrips();
+      print('DEBUG: getMyTrips response = ' + response.toString());
+      if (response['success'] == true && response['data'] != null) {
+        final List<dynamic> data = response['data'] ?? [];
+        print('DEBUG: parsed data = ' + data.toString());
+        packages = data
+            .map(
+              (pkg) => TravelPackage(
+                id: pkg['id'].toString(),
+                title: pkg['title'] ?? '',
+                destination: pkg['destination'] ?? '',
+                price: (pkg['price'] ?? 0).toDouble(),
+                image:
+                    pkg['cover_image'] != null &&
+                        pkg['cover_image']['url'] != null
+                    ? EnvConfig.baseUrl.replaceAll('/api/v1', '') +
+                          pkg['cover_image']['url']
+                    : '',
+                isDownloaded:
+                    false, // You can update this if you have download info
+                description: pkg['description'] ?? '',
+              ),
+            )
+            .toList();
+        print('DEBUG: parsed packages = ' + packages.toString());
+      } else {
+        errorMessage = response['message'] ?? 'Failed to load trips';
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   void handleDownload(String packageId) {
     setState(() {
@@ -107,47 +128,70 @@ class _TravelPackagesScreenState extends State<MyTrips> {
                 child: Text(
                   'My Trips',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
 
-              // Packages List
-              Expanded(
-                child: ListView.builder(
-                  itemCount: packages.length,
-                  itemBuilder: (context, index) {
-                    final package = packages[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          // ✅ Navigate to details page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                             builder: (context) => Theme(
-      data: Theme.of(context).copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0D0D12),
-        canvasColor: const Color(0xFF0D0D12), // Important
-      ),
-      child: const DestinationDetailsPage(),
-    
-                                
-),
-                            ),
-                          );
-                        },
-                        child: TravelPackageCard(
-                          package: package,
-                          onDownload: () => handleDownload(package.id),
+              // Loading/Error/Empty State
+              if (isLoading)
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (errorMessage.isNotEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                )
+              else if (packages.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text(
+                      'No trips found.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: packages.length,
+                    itemBuilder: (context, index) {
+                      final package = packages[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            // TODO: Pass package details to your details page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Theme(
+                                  data: Theme.of(context).copyWith(
+                                    scaffoldBackgroundColor: const Color(
+                                      0xFF0D0D12,
+                                    ),
+                                    canvasColor: const Color(0xFF0D0D12),
+                                  ),
+                                  child: const DestinationDetailsPage(),
+                                ),
+                              ),
+                            );
+                          },
+                          child: TravelPackageCard(
+                            package: package,
+                            onDownload: () => handleDownload(package.id),
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -180,10 +224,12 @@ class TravelPackageCard extends StatelessWidget {
             height: 160,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               image: package.image.isNotEmpty
                   ? DecorationImage(
-                      image: AssetImage(package.image),
+                      image: NetworkImage(package.image),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -191,7 +237,11 @@ class TravelPackageCard extends StatelessWidget {
             child: package.image.isEmpty
                 ? Container(
                     color: Colors.grey[800],
-                    child: const Icon(Icons.image, size: 60, color: Colors.grey),
+                    child: const Icon(
+                      Icons.image,
+                      size: 60,
+                      color: Colors.grey,
+                    ),
                   )
                 : null,
           ),
@@ -223,7 +273,10 @@ class TravelPackageCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         package.destination,
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -257,30 +310,50 @@ class TravelPackageCard extends StatelessWidget {
                             onPressed: null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green[600],
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            icon: const Icon(Icons.check, size: 16, color: Colors.white),
+                            icon: const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                             label: const Text(
                               "Downloaded",
-                              style: TextStyle(fontSize: 12, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           )
                         : ElevatedButton.icon(
                             onPressed: onDownload,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue[600],
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            icon: const Icon(Icons.download, size: 16, color: Colors.white),
+                            icon: const Icon(
+                              Icons.download,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                             label: const Text(
                               "Download",
-                              style: TextStyle(fontSize: 12, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                   ],
