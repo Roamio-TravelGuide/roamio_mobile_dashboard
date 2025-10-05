@@ -100,7 +100,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
     if (userRole == 'travel_guide') {
       context.go('${AppRoutes.guide}/${AppRoutes.guideMyTrips}');
     } else {
-      context.go('${AppRoutes.traveler}/${AppRoutes.travelerMyTrips}');
+      context.go('${AppRoutes.traveler}/${AppRoutes.travelerMyTripsBottom}');
     }
   }
 
