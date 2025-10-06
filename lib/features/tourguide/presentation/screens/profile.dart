@@ -1,385 +1,256 @@
 import 'package:flutter/material.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class GuideProfilePage extends StatefulWidget {
+  const GuideProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<GuideProfilePage> createState() => _GuideProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  bool notificationsEnabled = true;
-  bool darkModeEnabled = true;
+class _GuideProfilePageState extends State<GuideProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  
+  final TextEditingController _fullNameController = TextEditingController(text: 'Ferrnin Lopez');
+  final TextEditingController _phoneController = TextEditingController(text: '+1 (619) 234 3867');
+  final TextEditingController _emailController = TextEditingController(text: 'ferminlopez@gmail.com');
+  final TextEditingController _dobController = TextEditingController(text: 'December 22, 1997');
+  
+  String _selectedGender = 'Male';
+  final List<String> _genders = ['Male', 'Female', 'Other'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF222222),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile Header
-                    _buildProfileHeader(),
-                    const SizedBox(height: 30),
-                    
-                    // Stats Section
-                    _buildStatsSection(),
-                    const SizedBox(height: 30),
-                    
-                    // Achievements Section
-                    _buildAchievementsSection(),
-                    const SizedBox(height: 30),
-                    
-                    // Settings Section
-                    _buildSettingsSection(),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Bottom Navigation
-            _buildBottomNavigation(),
-          ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'Personal Data',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF34495E),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: const Icon(
-            Icons.person,
-            color: Colors.white,
-            size: 30,
-          ),
-        ),
-        const SizedBox(width: 15),
-        const Expanded(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'John Smith',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+              _buildSectionTitle('Full Name'),
+              const SizedBox(height: 8),
+              _buildTextField(_fullNameController, 'Enter your full name'),
+              
+              const SizedBox(height: 24),
+              
+              _buildSectionTitle('Phone Number'),
+              const SizedBox(height: 8),
+              _buildTextField(_phoneController, 'Enter your phone number', TextInputType.phone),
+              
+              const SizedBox(height: 24),
+              
+              _buildSectionTitle('Email Address'),
+              const SizedBox(height: 8),
+              _buildTextField(_emailController, 'Enter your email address', TextInputType.emailAddress),
+              
+              const SizedBox(height: 24),
+              
+              _buildSectionTitle('Date of Birth'),
+              const SizedBox(height: 8),
+              _buildTextField(_dobController, 'Select your date of birth', TextInputType.datetime,
+                
+  
               ),
-              SizedBox(height: 4),
-              Text(
-                'Audio Tour Creator',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
-              ),
-              SizedBox(height: 2),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    color: Colors.white,
-                    size: 14,
+              
+              const SizedBox(height: 24),
+              
+              _buildSectionTitle('Gender'),
+              const SizedBox(height: 8),
+              _buildGenderDropdown(),
+              
+              const SizedBox(height: 40),
+              
+              // Save Changes Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _saveChanges,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0066FF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  SizedBox(width: 4),
-                  Text(
-                    'New York, USA',
+                  child: const Text(
+                    'Save Changes',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildStatItem('4.9', 'Rating'),
-        _buildStatItem('15', 'Audio Tours'),
-        _buildStatItem('1.2k', 'Downloads'),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAchievementsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Achievements',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 15),
-        _buildAchievementItem(
-          Icons.star,
-          Colors.orange,
-          'Top Rated Creator',
-          'Maintained 4.8+ rating for 6 months',
-        ),
-        const SizedBox(height: 12),
-        _buildAchievementItem(
-          Icons.people,
-          Colors.teal,
-          'Popular Creator',
-          'Created 10+ audio tours with 100+ downloads',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAchievementItem(IconData icon, Color iconColor, String title, String description) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildSettingsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Settings',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF666666),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hintText, [
+    TextInputType keyboardType = TextInputType.text,
+    VoidCallback? onTap,
+    bool readOnly = false,
+  ]) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: Colors.black,
+      ),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(
+          color: Color(0xFF999999),
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF5F5F5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFF0066FF),
+            width: 1.5,
           ),
         ),
-        const SizedBox(height: 15),
-        _buildSettingsItem(Icons.security, 'Privacy & Security'),
-        const SizedBox(height: 10),
-        _buildLogoutItem(),
-      ],
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
     );
   }
 
-  Widget _buildSettingsItem(IconData icon, String title) {
+  Widget _buildGenderDropdown() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF34495E),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedGender,
+          isExpanded: true,
+          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF666666)),
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: Colors.black,
           ),
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: Colors.white,
-        ),
-        onTap: () {},
-      ),
-    );
-  }
-
-  Widget _buildSettingsToggleItem(IconData icon, String title, bool value, Function(bool) onChanged) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF34495E),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-          ),
-        ),
-        trailing: Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.teal,
-          activeTrackColor: Colors.teal.withOpacity(0.3),
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedGender = newValue!;
+            });
+          },
+          items: _genders.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildLogoutItem() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.logout,
-            color: Colors.red,
-            size: 20,
-          ),
-        ),
-        title: const Text(
-          'Logout',
-          style: TextStyle(
-            color: Colors.red,
-            fontSize: 14,
-          ),
-        ),
-        onTap: () {},
-      ),
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1997, 12, 22),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
     );
+    
+    if (picked != null) {
+      setState(() {
+        _dobController.text = _formatDate(picked);
+      });
+    }
   }
 
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Color(0xFF34495E),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.dashboard, 'Dashboard', false),
-          _buildNavItem(Icons.add_circle_outline, 'Create Tour', false),
-          _buildNavItem(Icons.monetization_on, 'Earnings', false),
-          _buildNavItem(Icons.person, 'Profile', true),
-        ],
-      ),
-    );
+  String _formatDate(DateTime date) {
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.teal : Colors.white,
-          size: 24,
+  void _saveChanges() {
+    if (_formKey.currentState!.validate()) {
+      // Save changes logic here
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Changes saved successfully'),
+          backgroundColor: Colors.green,
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.teal : Colors.white,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
+      );
+      
+      // Print the updated values
+      print('Full Name: ${_fullNameController.text}');
+      print('Phone: ${_phoneController.text}');
+      print('Email: ${_emailController.text}');
+      print('Date of Birth: ${_dobController.text}');
+      print('Gender: $_selectedGender');
+    }
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _dobController.dispose();
+    super.dispose();
   }
 }

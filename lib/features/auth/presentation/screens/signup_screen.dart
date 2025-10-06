@@ -45,7 +45,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-
               // Header
               Text(
                 'Create Account',
