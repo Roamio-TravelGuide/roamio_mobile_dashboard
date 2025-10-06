@@ -175,31 +175,6 @@ class AuthApi {
     return role == 'travel_guide';
   }
 
-  /// Logout user
-  Future<Map<String, dynamic>> logout() async {
-    try {
-      final response = await apiClient.post('/auth/logout', {});
-
-      final responseData = json.decode(response.body);
-
-      return {
-        'success': response.statusCode == 200,
-        'statusCode': response.statusCode,
-        'data': responseData,
-        'message': responseData['message'] ??
-            (response.statusCode == 200
-                ? 'Logout successful'
-                : 'Logout failed'),
-      };
-    } catch (error) {
-      return {
-        'success': false,
-        'message': 'Logout failed: ${error.toString()}',
-        'error': error,
-      };
-    }
-  }
-
   /// Send OTP for password reset
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
@@ -312,6 +287,71 @@ class AuthApi {
       return {
         'success': false,
         'message': 'Password reset failed: ${error.toString()}',
+        'error': error,
+      };
+    }
+  }
+
+  /// Logout user - Handles both local and backend logout
+  Future<Map<String, dynamic>> logout() async {
+    print('🔄 AuthApi.logout() called');
+    
+    try {
+      // Clear local storage first to ensure user can always logout
+      await AuthApi.clearAuthData();
+      print('✅ Local auth data cleared');
+      
+      // Clear the token in the API client
+      apiClient.clearToken();
+      print('✅ API client token cleared');
+
+      try {
+        // Try to call backend logout endpoint
+        print('📡 Attempting GET /auth/logout');
+        final response = await apiClient.get('/auth/logout');
+        
+        print('📡 Response status code: ${response.statusCode}');
+        
+        // Try to parse JSON response if available
+        Map<String, dynamic>? responseData;
+        if (response.body.trim().isNotEmpty) {
+          try {
+            responseData = json.decode(response.body);
+            print('✅ Successfully parsed JSON response');
+          } catch (e) {
+            // Ignore JSON parsing errors since we've already logged out locally
+            print('⚠️ Non-JSON response from backend');
+          }
+        }
+
+        return {
+          'success': true,
+          'statusCode': response.statusCode,
+          'message': responseData?['message'] ?? 'Logged out successfully',
+          'data': responseData,
+        };
+      } catch (backendError) {
+        // If backend call fails, still return success since we've cleared local storage
+        print('⚠️ Backend logout failed: $backendError');
+        return {
+          'success': true,
+          'statusCode': 200,
+          'message': 'Logged out successfully (local only)',
+          'warning': 'Backend logout unavailable',
+        };
+      }
+    } catch (error) {
+      print('⚠️ Error during logout: $error');
+      
+      // Try one last time to clear tokens even if previous attempts failed
+      try {
+        await AuthApi.clearAuthData();
+        apiClient.clearToken();
+      } catch (_) {}
+      
+      return {
+        'success': false,
+        'message': 'Logout failed completely: ${error.toString()}',
         'error': error,
       };
     }
