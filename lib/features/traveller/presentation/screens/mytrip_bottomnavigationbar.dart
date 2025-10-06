@@ -56,50 +56,48 @@ class _MyTripsState extends State<MyTrips> {
   }
 
   Future<void> _fetchMyTrips() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
-    try {
-      final travellerApi = TravellerApi(
-        apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl),
-      );
-      final response = await travellerApi.getMyTrips();
-      print('DEBUG: getMyTrips response = ' + response.toString());
-      if (response['success'] == true && response['data'] != null) {
-        final List<dynamic> data = response['data'] ?? [];
-        print('DEBUG: parsed data = ' + data.toString());
-        packages = data
-            .map(
-              (pkg) => TravelPackage(
-                id: pkg['id'].toString(),
-                title: pkg['title'] ?? '',
-                destination: pkg['destination'] ?? '',
-                price: (pkg['price'] ?? 0).toDouble(),
-                image:
-                    pkg['cover_image'] != null &&
-                        pkg['cover_image']['url'] != null
-                    ? EnvConfig.baseUrl.replaceAll('/api/v1', '') +
-                          pkg['cover_image']['url']
-                    : '',
-                isDownloaded:
-                    false, // You can update this if you have download info
-                description: pkg['description'] ?? '',
-              ),
-            )
-            .toList();
-        print('DEBUG: parsed packages = ' + packages.toString());
-      } else {
-        errorMessage = response['message'] ?? 'Failed to load trips';
-      }
-    } catch (e) {
-      errorMessage = e.toString();
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+  setState(() {
+    isLoading = true;
+    errorMessage = '';
+  });
+  try {
+    final travellerApi = TravellerApi(
+      apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl),
+    );
+    final response = await travellerApi.getMyTrips();
+    print('DEBUG: getMyTrips response = $response');
+
+    if (response['data'] != null && response['data'] is List && response['data'].isNotEmpty) {
+      final List<dynamic> data = response['data'];
+      print('DEBUG: parsed data = $data');
+
+      packages = data
+          .map(
+            (pkg) => TravelPackage(
+              id: pkg['id'].toString(),
+              title: pkg['title'] ?? '',
+              destination: pkg['destination'] ?? '', // optional
+              price: (pkg['price'] ?? 0).toDouble(),
+              image: 'https://via.placeholder.com/400x250.png?text=No+Image',
+              isDownloaded: false,
+              description: pkg['description'] ?? '',
+            ),
+          )
+          .toList();
+
+      print('DEBUG: parsed packages = $packages');
+    } else {
+      errorMessage = response['message'] ?? 'Failed to load trips';
     }
+  } catch (e) {
+    errorMessage = e.toString();
+  } finally {
+    setState(() {
+      isLoading = false;
+    });
   }
+}
+
 
   void handleDownload(String packageId) {
     setState(() {

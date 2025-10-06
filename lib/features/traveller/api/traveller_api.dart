@@ -64,8 +64,8 @@ class TravellerApi {
     }
   }
 Future<Map<String, dynamic>> getMyTrips() async {
-  try {
-    final response = await apiClient.get('/payment/my-trips');
+try {
+  final response = await apiClient.get('/traveller/my-trips');
     if (response.statusCode == 200) {
       final responseBody = json.decode(response.body);
       if (responseBody is Map<String, dynamic>) {
@@ -79,6 +79,41 @@ Future<Map<String, dynamic>> getMyTrips() async {
   } catch (error) {
     print('Error fetching my trips: $error');
     return {'success': false, 'data': null, 'message': error.toString()};
+  }
+}
+
+Future<Map<String, dynamic>> createPaymentIntent(double amount, {String? packageId, String currency = 'usd'}) async {
+  try {
+    final data = {
+      'amount': amount,
+      'currency': currency,
+      'metadata': packageId != null ? {'packageId': packageId} : {}
+    };
+    final response = await apiClient.post('/payment/create-payment-intent', data);
+    if (response.statusCode == 201) {
+      final responseBody = json.decode(response.body);
+      return responseBody;
+    } else {
+      throw Exception('Failed to create payment intent: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error creating payment intent: $error');
+    return {'success': false, 'message': error.toString()};
+  }
+}
+
+Future<Map<String, dynamic>> createStripPayment(Map<String, dynamic> paymentIntentData) async {
+  try {
+    final response = await apiClient.post('/payment/create-strip-payment', paymentIntentData);
+    if (response.statusCode == 201) {
+      final responseBody = json.decode(response.body);
+      return responseBody;
+    } else {
+      throw Exception('Failed to create strip payment: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error creating strip payment: $error');
+    return {'success': false, 'message': error.toString()};
   }
 }
   // Fallback sample response for debugging
