@@ -30,57 +30,45 @@ class CustomBottomNavigationBar extends StatelessWidget {
         children: [
           // Home
           _NavItem(
-            Icons.home_outlined,
-            'Home',
-            currentIndex == AppRoutes.homeTab,
+            icon: Icons.home_outlined,
+            label: 'Home',
+            isActive: currentIndex == AppRoutes.homeTab,
             onTap: () => _navigateToHome(context),
           ),
           
           // My Trips
           _NavItem(
-            Icons.location_on,
-            'My Trip',
-            currentIndex == AppRoutes.myTripsTab,
+            icon: Icons.location_on,
+            label: 'My Trip',
+            isActive: currentIndex == AppRoutes.myTripsTab,
             onTap: () => _navigateToMyTrips(context),
           ),
           
-          // Add for traveler, or empty space for guide
-          if (isGuide)
-            const SizedBox(width: 48) // Empty space to maintain layout
-          else
-            GestureDetector(
-              onTap: () => context.go(AppRoutes.addHiddenPage),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 24),
-              ),
-            ),
+          // Add button for BOTH travelers and guides
+          _AddButton(
+            onTap: () => _navigateToAddHiddenPage(context),
+          ),
           
           // Favorites for traveler, Earnings for guide
           isGuide
             ? _NavItem(
-                Icons.attach_money,
-                'Earnings',
-                currentIndex == AppRoutes.earningsTab,
+                icon: Icons.attach_money,
+                label: 'Earnings',
+                isActive: currentIndex == AppRoutes.earningsTab,
                 onTap: () => _navigateToEarnings(context),
               )
             : _NavItem(
-                Icons.favorite_outline,
-                'Favorite',
-                currentIndex == AppRoutes.favoritesTab,
+                icon: Icons.favorite_outline,
+                label: 'Favorite',
+                isActive: currentIndex == AppRoutes.favoritesTab,
                 onTap: () => _navigateToFavorites(context),
               ),
           
           // Profile
           _NavItem(
-            Icons.person_outline,
-            'Profile',
-            currentIndex == AppRoutes.profileTab,
+            icon: Icons.person_outline,
+            label: 'Profile',
+            isActive: currentIndex == AppRoutes.profileTab,
             onTap: () => _navigateToProfile(context),
           ),
         ],
@@ -119,6 +107,21 @@ class CustomBottomNavigationBar extends StatelessWidget {
       context.go('${AppRoutes.traveler}/${AppRoutes.travelerProfile}');
     }
   }
+
+  void _navigateToAddHiddenPage(BuildContext context) {
+    print('=== NAVIGATION DEBUG ===');
+    print('User role: $userRole');
+    
+    if (userRole == 'travel_guide') {
+      final route = '${AppRoutes.guide}/${AppRoutes.addHiddenPage}';
+      print('Navigating to: $route');
+      context.go(route);
+    } else {
+      final route = '${AppRoutes.traveler}/${AppRoutes.addHiddenPage}';
+      print('Navigating to: $route');
+      context.go(route);
+    }
+  }
 }
 
 class _NavItem extends StatelessWidget {
@@ -127,29 +130,72 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
 
-  const _NavItem(this.icon, this.label, this.isActive, {required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isActive ? Colors.blue : Colors.grey.shade500,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
+      child: SizedBox(
+        width: 60,
+        height: 60,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
               color: isActive ? Colors.blue : Colors.grey.shade500,
-              fontSize: 12,
+              size: 24,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.blue : Colors.grey.shade500,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
   }
