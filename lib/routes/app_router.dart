@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import './route_guard.dart';
-import '../features//auth/api/auth_api.dart';
+import '../features/auth/api/auth_api.dart';
 
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
@@ -19,6 +19,7 @@ import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip.dart';
 import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
 import '../features/traveller/presentation/screens/add_hidden_page.dart';
+import '../features/traveller/presentation/screens/profile_screen.dart';
 import '../core/widgets/bottom_navigation.dart';
 
 class AppRoutes {
@@ -54,7 +55,7 @@ class AppRoutes {
   static const int homeTab = 0;
   static const int myTripsTab = 1;
   static const int favoritesTab = 2;
-  static const int earningsTab = 2; // For guide, this replaces favorites
+  static const int earningsTab = 2;
   static const int profileTab = 3;
 }
 
@@ -98,36 +99,40 @@ final GoRouter appRouter = GoRouter(
     // Tour Guide tabbed navigation
     ShellRoute(
       builder: (context, state, child) {
-        // Determine current index based on route path
         int currentIndex = _getGuideCurrentIndex(state.uri.path);
         return FutureBuilder<String?>(
           future: AuthApi.getUserRole(),
-          builder: (context,snapshot){
+          builder: (context, snapshot) {
             final role = snapshot.data ?? 'traveler';
             return Scaffold(
               body: child,
-              bottomNavigationBar: CustomBottomNavigationBar(currentIndex: currentIndex, userRole: role),
+              bottomNavigationBar: CustomBottomNavigationBar(
+                currentIndex: currentIndex, 
+                userRole: role,
+              ),
             );
           },
         );
       },
       routes: [
-        // Guide home is now the default route under /guide
+        // Guide home is the default route
         GoRoute(
-          path: '${AppRoutes.guide}/${AppRoutes.guideHome}',
-          builder: (_, __) => const GuideLandingScreen(),
-        ),
-        GoRoute(
-          path: '${AppRoutes.guide}/${AppRoutes.guideMyTrips}',
-          builder: (_, __) => const MyTripScreen(),
-        ),
-        GoRoute(
-          path: '${AppRoutes.guide}/${AppRoutes.guideEarnings}',
-          builder: (_, __) => const EarningsScreen(),
-        ),
-        GoRoute(
-          path: '${AppRoutes.guide}/${AppRoutes.guideProfile}',
-          builder: (_, __) => const ProfilePage(),
+          path: '${AppRoutes.guide}/:tab(${AppRoutes.guideHome}|${AppRoutes.guideMyTrips}|${AppRoutes.guideEarnings}|${AppRoutes.guideProfile})',
+          builder: (context, state) {
+            final tab = state.pathParameters['tab'] ?? AppRoutes.guideHome;
+            switch (tab) {
+              case AppRoutes.guideHome:
+                return const GuideLandingScreen();
+              case AppRoutes.guideMyTrips:
+                return const MyTripScreen();
+              case AppRoutes.guideEarnings:
+                return const EarningsScreen();
+              case AppRoutes.guideProfile:
+                return const GuideProfilePage();
+              default:
+                return const GuideLandingScreen();
+            }
+          },
         ),
       ],
     ),
@@ -135,21 +140,23 @@ final GoRouter appRouter = GoRouter(
     // Traveler tabbed navigation
     ShellRoute(
       builder: (context, state, child) {
-        // Determine current index based on route path
         int currentIndex = _getTravelerCurrentIndex(state.uri.path);
         return FutureBuilder<String?>(
           future: AuthApi.getUserRole(),
-          builder: (context,snapshot){
+          builder: (context, snapshot) {
             final role = snapshot.data ?? 'traveler';
             return Scaffold(
               body: child,
-              bottomNavigationBar: CustomBottomNavigationBar(currentIndex: currentIndex, userRole: role),
+              bottomNavigationBar: CustomBottomNavigationBar(
+                currentIndex: currentIndex, 
+                userRole: role,
+              ),
             );
           },
         );
       },
       routes: [
-        // Traveler home is now the default route under /traveler
+        // Traveler home is the default route
         GoRoute(
           path: '${AppRoutes.traveler}/${AppRoutes.travelerHome}',
           builder: (_, __) => const HomePage(),
@@ -175,7 +182,6 @@ final GoRouter appRouter = GoRouter(
   ],
   
   redirect: (context, state) async {
-    // Check both authentication and role-based redirection
     final authRedirect = await RouteGuard.redirectIfNotAuth(context, state);
     if (authRedirect != null) return authRedirect;
     
@@ -196,7 +202,7 @@ final GoRouter appRouter = GoRouter(
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () async {
-              final role = await AuthApi.getUserRole(); // Use AuthApi instead of StorageHelper
+              final role = await AuthApi.getUserRole();
               if (role == 'travel_guide') {
                 context.go('${AppRoutes.guide}/${AppRoutes.guideHome}');
               } else {
@@ -212,19 +218,19 @@ final GoRouter appRouter = GoRouter(
 );
 
 int _getTravelerCurrentIndex(String path) {
-  if (path.endsWith(AppRoutes.travelerHome)) return AppRoutes.homeTab;
-  if (path.endsWith(AppRoutes.travelerMyTrips)) return AppRoutes.myTripsTab;
-  if (path.endsWith(AppRoutes.travelerFavorites)) return AppRoutes.favoritesTab;
-  if (path.endsWith(AppRoutes.travelerProfile)) return AppRoutes.profileTab;
-  return AppRoutes.homeTab; // Default to home
+  if (path.contains(AppRoutes.travelerHome)) return AppRoutes.homeTab;
+  if (path.contains(AppRoutes.travelerMyTrips)) return AppRoutes.myTripsTab;
+  if (path.contains(AppRoutes.travelerFavorites)) return AppRoutes.favoritesTab;
+  if (path.contains(AppRoutes.travelerProfile)) return AppRoutes.profileTab;
+  return AppRoutes.homeTab;
 }
 
 int _getGuideCurrentIndex(String path) {
-  if (path.endsWith(AppRoutes.guideHome)) return AppRoutes.homeTab;
-  if (path.endsWith(AppRoutes.guideMyTrips)) return AppRoutes.myTripsTab;
-  if (path.endsWith(AppRoutes.guideEarnings)) return AppRoutes.earningsTab;
-  if (path.endsWith(AppRoutes.guideProfile)) return AppRoutes.profileTab;
-  return AppRoutes.homeTab; // Default to home
+  if (path.contains(AppRoutes.guideHome)) return AppRoutes.homeTab;
+  if (path.contains(AppRoutes.guideMyTrips)) return AppRoutes.myTripsTab;
+  if (path.contains(AppRoutes.guideEarnings)) return AppRoutes.earningsTab;
+  if (path.contains(AppRoutes.guideProfile)) return AppRoutes.profileTab;
+  return AppRoutes.homeTab;
 }
 
 // Placeholder screen for favorites
