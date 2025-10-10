@@ -17,6 +17,7 @@ import '../features/tourguide/presentation/screens/profile.dart';
 
 import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip.dart';
+import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
 import '../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../features/traveller/presentation/screens/profile_screen.dart';
 import '../core/widgets/bottom_navigation.dart';
@@ -169,7 +170,7 @@ final GoRouter appRouter = GoRouter(
       case AppRoutes.travelerHome:
         return const HomePage();
       case AppRoutes.travelerMyTrips:
-        return const MyTripScreen();
+        return const MyTrips();
       case AppRoutes.travelerFavorites:
         return const FavoritesScreen();
       case AppRoutes.travelerProfile:
