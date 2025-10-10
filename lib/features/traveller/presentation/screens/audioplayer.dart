@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
-class BottomAudioPlayer extends StatelessWidget {
+class BottomAudioPlayer extends StatefulWidget {
   final String title;
   final VoidCallback onPlayPause;
   final VoidCallback onStop;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
   final ValueChanged<double> onSeek;
+  final ValueChanged<double>? onSpeedChange;
+  final VoidCallback? onReplay;
+  final VoidCallback? onForward;
   final bool isPlaying;
   final ValueNotifier<double> currentPositionNotifier;
   final double totalDuration;
   final String progressText; // e.g., "2/5"
+  final String? durationText; // e.g., "5:00"
 
   const BottomAudioPlayer({
     required this.title,
@@ -19,12 +23,82 @@ class BottomAudioPlayer extends StatelessWidget {
     required this.onNext,
     required this.onPrevious,
     required this.onSeek,
+    this.onSpeedChange,
+    this.onReplay,
+    this.onForward,
     required this.isPlaying,
     required this.currentPositionNotifier,
     required this.totalDuration,
     required this.progressText,
+    this.durationText,
     Key? key,
   }) : super(key: key);
+
+  @override
+  _BottomAudioPlayerState createState() => _BottomAudioPlayerState();
+}
+
+class _BottomAudioPlayerState extends State<BottomAudioPlayer> {
+  double currentSpeed = 1.0;
+
+  void _showSpeedOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Playback Speed',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...[0.5, 1.0, 1.5].map((speed) => ListTile(
+                title: Text(
+                  '${speed}x',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                trailing: currentSpeed == speed
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    currentSpeed = speed;
+                  });
+                  widget.onSpeedChange?.call(speed);
+                  Navigator.pop(context);
+                },
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _skipBackward() {
+    // Default skip backward by 10 seconds if no callback provided
+    final currentPosition = widget.currentPositionNotifier.value;
+    final newPosition = (currentPosition - 10).clamp(0.0, widget.totalDuration);
+    widget.onSeek(newPosition);
+  }
+
+  void _skipForward() {
+    // Default skip forward by 10 seconds if no callback provided
+    final currentPosition = widget.currentPositionNotifier.value;
+    final newPosition = (currentPosition + 10).clamp(0.0, widget.totalDuration);
+    widget.onSeek(newPosition);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +117,7 @@ class BottomAudioPlayer extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -59,52 +133,71 @@ class BottomAudioPlayer extends StatelessWidget {
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Text(
-                  progressText,
+                  widget.progressText,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ],
           ),
+          // Duration text below title
+          if (widget.durationText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                widget.durationText!,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
 
           // Speed control + slider with time labels + replay button
           ValueListenableBuilder<double>(
-            valueListenable: currentPositionNotifier,
+            valueListenable: widget.currentPositionNotifier,
             builder: (context, currentPosition, _) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: const Text(
-                      '1x\nspeed',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        height: 1.2,
+                  // Speed control button
+                  GestureDetector(
+                    onTap: _showSpeedOptions,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        '${currentSpeed}x\nspeed',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
-                  // Refresh button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.refresh,
-                      color: Colors.black,
-                      size: 20,
+
+                  // Replay button (skip backward)
+                  GestureDetector(
+                    onTap: widget.onReplay ?? _skipBackward,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.replay,
+                        color: Colors.black,
+                        size: 20,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  
+
                   Expanded(
                     child: SizedBox(
                       height: 40, // Match button height for perfect alignment
@@ -125,8 +218,8 @@ class BottomAudioPlayer extends StatelessWidget {
                               child: Slider(
                                 value: currentPosition,
                                 min: 0,
-                                max: totalDuration,
-                                onChanged: onSeek,
+                                max: widget.totalDuration,
+                                onChanged: widget.onSeek,
                               ),
                             ),
                           ),
@@ -143,7 +236,7 @@ class BottomAudioPlayer extends StatelessWidget {
                                   style: const TextStyle(color: Colors.white, fontSize: 14),
                                 ),
                                 Text(
-                                  '-${_formatTime(totalDuration - currentPosition)}',
+                                  '-${_formatTime(widget.totalDuration - currentPosition)}',
                                   style: const TextStyle(color: Colors.white, fontSize: 14),
                                 ),
                               ],
@@ -153,22 +246,25 @@ class BottomAudioPlayer extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(width: 4),
-                  
-                  // Repeat button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.refresh,
-                      color: Colors.black,
-                      size: 20,
+
+                  // Forward button (skip forward)
+                  GestureDetector(
+                    onTap: widget.onForward ?? _skipForward,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.refresh,
+                        color: Colors.black,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
@@ -183,12 +279,12 @@ class BottomAudioPlayer extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.skip_previous, color: Colors.white, size: 32),
-                onPressed: onPrevious,
+                onPressed: widget.onPrevious,
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(width: 24),
               GestureDetector(
-                onTap: onPlayPause,
+                onTap: widget.onPlayPause,
                 child: Container(
                   width: 156,
                   height: 56,
@@ -197,7 +293,7 @@ class BottomAudioPlayer extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isPlaying ? Icons.pause : Icons.play_arrow,
+                    widget.isPlaying ? Icons.pause : Icons.play_arrow,
                     color: Colors.black,
                     size: 28,
                   ),
@@ -206,7 +302,7 @@ class BottomAudioPlayer extends StatelessWidget {
               const SizedBox(width: 24),
               IconButton(
                 icon: const Icon(Icons.skip_next, color: Colors.white, size: 32),
-                onPressed: onNext,
+                onPressed: widget.onNext,
                 padding: EdgeInsets.zero,
               ),
             ],

@@ -11,6 +11,8 @@ class ApiEndpoints {
   
   // Profile endpoints
   static const String userProfile = '/profile';
+
+   static const String createPaymentIntent = '/payment/create-payment-intent';
   
   // Add more endpoints as needed...
 }

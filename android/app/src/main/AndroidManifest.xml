@@ -2,7 +2,14 @@
     <application
         android:label="roamio_mobile_dashbaord"
         android:name="${applicationName}"
+<<<<<<< HEAD
+        android:icon="@mipmap/ic_launcher"
+        tools:replace="android:label"
+        android:launchMode="singleTop">
+        
+=======
         android:icon="@mipmap/ic_launcher">
+>>>>>>> 66deb17a0e5cef4eab4af99e5c64c87b3aa872e5
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -23,6 +30,14 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            
+            <!-- Add this for Stripe -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="roamio" /> <!-- Replace with your app's scheme -->
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
