@@ -116,6 +116,25 @@ Future<Map<String, dynamic>> createStripPayment(Map<String, dynamic> paymentInte
     return {'success': false, 'message': error.toString()};
   }
 }
+
+Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {double radius = 500, String? category}) async {
+  try {
+    final response = await apiClient.get('/traveller/nearby-pois');
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to load nearby POIs: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching nearby POIs: $error');
+    return {'success': false, 'data': [], 'message': error.toString()};
+  }
+}
   // Fallback sample response for debugging
   Map<String, dynamic> _getSampleResponse() {
     return {

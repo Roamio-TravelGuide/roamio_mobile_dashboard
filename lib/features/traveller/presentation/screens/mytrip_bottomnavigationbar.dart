@@ -77,15 +77,26 @@ class _MyTripsState extends State<MyTrips> {
 
       packages = data
           .map(
-            (pkg) => TravelPackage(
-              id: pkg['id'].toString(),
-              title: pkg['title'] ?? '',
-              destination: pkg['destination'] ?? '', // optional
-              price: (pkg['price'] ?? 0).toDouble(),
-              image: pkg['cover_image'] != null ? pkg['cover_image']['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image' : 'https://via.placeholder.com/400x250.png?text=No+Image',
-              isDownloaded: false,
-              description: pkg['description'] ?? '',
-            ),
+            (pkg) {
+              // Get district from first stop's location
+              String destination = '';
+              if (pkg['tour_stops'] != null && pkg['tour_stops'] is List && pkg['tour_stops'].isNotEmpty) {
+                final firstStop = pkg['tour_stops'][0];
+                if (firstStop['location'] != null && firstStop['location']['district'] != null) {
+                  destination = firstStop['location']['district'];
+                }
+              }
+
+              return TravelPackage(
+                id: pkg['id'].toString(),
+                title: pkg['title'] ?? '',
+                destination: destination,
+                price: (pkg['price'] ?? 0).toDouble(),
+                image: pkg['cover_image'] != null ? pkg['cover_image']['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image' : 'https://via.placeholder.com/400x250.png?text=No+Image',
+                isDownloaded: false,
+                description: pkg['description'] ?? '',
+              );
+            },
           )
           .toList();
 
