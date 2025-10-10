@@ -189,48 +189,10 @@ class GuideLandingScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Color(0xFF34495E),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.dashboard, 'Dashboard', true),
-          _buildNavItem(Icons.add_circle_outline, 'Create Tour', false),
-          _buildNavItem(Icons.monetization_on, 'Earnings', false),
-          _buildNavItem(Icons.person, 'Profile', false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: isActive ? Colors.teal : Colors.white54, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.teal : Colors.white54,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
-  }
+  
 }
 
 // ------------------------ WIDGETS ------------------------
