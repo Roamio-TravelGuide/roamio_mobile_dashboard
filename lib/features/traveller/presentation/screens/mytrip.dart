@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'restaurant_detail.dart';
 import 'audioplayer.dart';
 
@@ -12,6 +13,24 @@ class _MyTripScreenState extends State<MyTripScreen> {
   bool isPlaying = false;
   ValueNotifier<double> currentPositionNotifier = ValueNotifier(38.0); // initial position
   double totalDuration = 116.0; // 1:56
+  AudioPlayer? audioPlayer;
+  int currentStopIndex = 0;
+
+  // List of stops with audio URLs
+  final List<Map<String, dynamic>> stops = [
+    {
+      'title': 'Tanah Lot Temple',
+      'audioUrl': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // placeholder
+    },
+    {
+      'title': 'Next Stop',
+      'audioUrl': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // placeholder
+    },
+    {
+      'title': 'Another Stop',
+      'audioUrl': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // placeholder
+    },
+  ];
 
   // Sample restaurant data
   final List<Map<String, dynamic>> restaurants = [
@@ -42,8 +61,73 @@ class _MyTripScreenState extends State<MyTripScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    audioPlayer = AudioPlayer();
+    // Listen to player state changes
+    audioPlayer!.playerStateStream.listen((state) {
+      setState(() {
+        isPlaying = state.playing;
+      });
+      print('Audio player state: ${state.processingState}, playing: ${state.playing}');
+    });
+
+    // Listen to position changes for real-time progress
+    audioPlayer!.positionStream.listen((position) {
+      currentPositionNotifier.value = position.inSeconds.toDouble();
+    });
+
+    // Listen to duration changes
+    audioPlayer!.durationStream.listen((duration) {
+      if (duration != null) {
+        setState(() {
+          totalDuration = duration.inSeconds.toDouble();
+        });
+        print('Duration updated: $totalDuration seconds');
+      }
+    });
+    _loadCurrentAudio();
+  }
+
+  void _loadCurrentAudio() async {
+    if (audioPlayer != null && stops.isNotEmpty) {
+      try {
+        print('Loading audio for stop: ${stops[currentStopIndex]['title']}');
+        await audioPlayer!.setUrl(stops[currentStopIndex]['audioUrl']);
+        // Duration will be updated via durationStream listener
+        currentPositionNotifier.value = 0.0;
+        print('Audio loaded successfully');
+      } catch (e) {
+        print('Error loading audio: $e');
+        // Set fallback duration
+        setState(() {
+          totalDuration = 116.0;
+        });
+      }
+    }
+  }
+
+  void _changeStop(int newIndex) {
+    if (newIndex >= 0 && newIndex < stops.length) {
+      setState(() {
+        currentStopIndex = newIndex;
+        isPlaying = true;
+      });
+      _loadCurrentAudio();
+      audioPlayer?.play();
+    }
+  }
+
+  String _formatTime(double seconds) {
+    final int mins = seconds ~/ 60;
+    final int secs = seconds.toInt() % 60;
+    return '${mins}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  @override
   void dispose() {
     currentPositionNotifier.dispose();
+    audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -135,28 +219,30 @@ class _MyTripScreenState extends State<MyTripScreen> {
                 valueListenable: currentPositionNotifier,
                 builder: (context, value, child) {
                   return BottomAudioPlayer(
-                    title: 'Tanah Lot Temple',
+                    title: stops[currentStopIndex]['title'],
                     onPlayPause: () {
-                      setState(() {
-                        isPlaying = !isPlaying;
-                      });
+                      if (audioPlayer!.playing) {
+                        audioPlayer?.pause();
+                      } else {
+                        audioPlayer?.play();
+                      }
                     },
                     onStop: () {
                       setState(() {
                         isPlaying = false;
                         currentPositionNotifier.value = 0.0;
                       });
+                      audioPlayer?.stop();
                     },
-                    onNext: () {},
-                    onPrevious: () {},
+                    onNext: () => _changeStop(currentStopIndex + 1),
+                    onPrevious: () => _changeStop(currentStopIndex - 1),
                     onSeek: (position) {
-                      currentPositionNotifier.value = position;
+                      audioPlayer?.seek(Duration(seconds: position.toInt()));
                     },
                     isPlaying: isPlaying,
                     currentPositionNotifier: currentPositionNotifier,
                     totalDuration: totalDuration,
-                    progressText:
-                        '${(currentPositionNotifier.value / 60).floor()}:${(currentPositionNotifier.value % 60).floor().toString().padLeft(2, '0')} / ${(totalDuration / 60).floor()}:${(totalDuration % 60).floor().toString().padLeft(2, '0')}',
+                    progressText: '${_formatTime(currentPositionNotifier.value)} / ${_formatTime(totalDuration)}',
                   );
                 },
               ),

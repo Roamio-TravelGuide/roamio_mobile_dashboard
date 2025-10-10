@@ -59,6 +59,28 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   void initState() {
     super.initState();
     audioPlayer = AudioPlayer();
+    // Listen to player state changes
+    audioPlayer!.playerStateStream.listen((state) {
+      setState(() {
+        isPlaying = state.playing;
+      });
+      print('Audio player state: ${state.processingState}, playing: ${state.playing}');
+    });
+
+    // Listen to position changes for real-time progress
+    audioPlayer!.positionStream.listen((position) {
+      currentPositionNotifier.value = position.inSeconds.toDouble();
+    });
+
+    // Listen to duration changes
+    audioPlayer!.durationStream.listen((duration) {
+      if (duration != null) {
+        setState(() {
+          totalDuration = duration.inSeconds.toDouble();
+        });
+        print('Duration updated: $totalDuration seconds');
+      }
+    });
   }
 
   void onSeek(double value) {
@@ -241,26 +263,102 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
               ]),
             ),
           ),
+
+          // Bottom Audio Player if playing
+          if (currentPlayingIndex != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: ValueListenableBuilder<double>(
+                  valueListenable: currentPositionNotifier,
+                  builder: (context, value, child) {
+                    final currentStop = stopTitles[currentPlayingIndex!];
+                    return BottomAudioPlayer(
+                      title: currentStop['stop_name'] ?? 'Stop ${currentPlayingIndex! + 1}',
+                      onPlayPause: () {
+                        if (audioPlayer!.playing) {
+                          audioPlayer?.pause();
+                        } else {
+                          audioPlayer?.play();
+                        }
+                      },
+                      onStop: () {
+                        setState(() {
+                          isPlaying = false;
+                          currentPositionNotifier.value = 0.0;
+                          currentPlayingIndex = null;
+                        });
+                        audioPlayer?.stop();
+                      },
+                      onNext: () => _changeStop(currentPlayingIndex! + 1),
+                      onPrevious: () => _changeStop(currentPlayingIndex! - 1),
+                      onSeek: (position) {
+                        audioPlayer?.seek(Duration(seconds: position.toInt()));
+                      },
+                      isPlaying: isPlaying,
+                      currentPositionNotifier: currentPositionNotifier,
+                      totalDuration: totalDuration,
+                      progressText: '${_formatTime(currentPositionNotifier.value)} / ${_formatTime(totalDuration)}',
+                    );
+                  },
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   void _onPlayAudio(int index) {
-    if (index < 2) {
-      // First 2 cards - show audio player
-      setState(() {
-        if (currentPlayingIndex == index && isPlaying) {
-          isPlaying = false;
-        } else {
-          currentPlayingIndex = index;
-          isPlaying = true;
+    // Since this package is already purchased (from my trips), allow all stops
+    setState(() {
+      if (currentPlayingIndex == index && isPlaying) {
+        isPlaying = false;
+      } else {
+        currentPlayingIndex = index;
+        isPlaying = true;
+      }
+    });
+    _loadCurrentAudio();
+  }
+
+  void _loadCurrentAudio() async {
+    if (audioPlayer != null && currentPlayingIndex != null && stopTitles.isNotEmpty) {
+      final stop = stopTitles[currentPlayingIndex!];
+      final audioUrl = stop['audio_url'] ?? 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'; // placeholder
+      try {
+        print('Loading audio for stop: ${stop['stop_name']}');
+        await audioPlayer!.setUrl(audioUrl);
+        // Duration will be updated via durationStream listener
+        currentPositionNotifier.value = 0.0;
+        print('Audio loaded successfully');
+        if (isPlaying) {
+          audioPlayer?.play();
         }
-      });
-    } else {
-      // Last 3 cards - show purchase dialog
-      _showBuyTourDialog(context);
+      } catch (e) {
+        print('Error loading audio: $e');
+        // Set fallback duration
+        setState(() {
+          totalDuration = 225.0;
+        });
+      }
     }
+  }
+
+  void _changeStop(int newIndex) {
+    if (newIndex >= 0 && newIndex < stopTitles.length) {
+      setState(() {
+        currentPlayingIndex = newIndex;
+        isPlaying = true;
+      });
+      _loadCurrentAudio();
+    }
+  }
+
+  String _formatTime(double seconds) {
+    final int mins = seconds ~/ 60;
+    final int secs = seconds.toInt() % 60;
+    return '${mins}:${secs.toString().padLeft(2, '0')}';
   }
 }
 
@@ -427,9 +525,13 @@ class _EllaDetailsSection extends StatelessWidget {
             const SizedBox(width: 6),
             const Icon(Icons.star, color: Colors.amber, size: 14),
             const SizedBox(width: 4),
-            const Text(
-              '4.6',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            Text(
+              (package?['average_rating'] ?? 0.0).toStringAsFixed(1),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.8), // Darker than default white
+              ),
             ),
             const SizedBox(width: 2),
             Text(
@@ -528,7 +630,7 @@ class _EllaDetailsSection extends StatelessWidget {
                   Icon(Icons.headset, color: Colors.blue, size: 14),
                   const SizedBox(width: 6),
                   Text(
-                    'Preview Tour',
+                    'View Tour',
                     style: TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.w600,
@@ -886,4 +988,5 @@ class _RadioOption extends StatelessWidget {
     );
   }
 }
+
 
