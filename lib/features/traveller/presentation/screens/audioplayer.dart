@@ -76,7 +76,7 @@ class BottomAudioPlayer extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: const Text(
+                    child: Text(
                       '1x\nspeed',
                       textAlign: TextAlign.center,
                       style: TextStyle(

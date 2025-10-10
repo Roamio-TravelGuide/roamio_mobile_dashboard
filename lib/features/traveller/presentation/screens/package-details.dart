@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import './package_checkout.dart';
 import 'audioplayer.dart';
 import 'gallery_page.dart';
@@ -32,8 +33,9 @@ class TravelApp extends StatelessWidget {
 }
 
 class DestinationDetailsPage extends StatefulWidget {
-  
-  const DestinationDetailsPage({super.key});
+  final Map<String, dynamic>? package;
+
+  const DestinationDetailsPage({super.key, this.package});
 
   @override
   State<DestinationDetailsPage> createState() => _DestinationDetailsPageState();
@@ -44,14 +46,20 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   bool isPlaying = false;
   ValueNotifier<double> currentPositionNotifier = ValueNotifier(0.0);
   double totalDuration = 225.0; // 3:45 in seconds
+  AudioPlayer? audioPlayer;
 
-  final List<String> stopTitles = [
-    'Tanah Lot Temple',
-    'Sacred Water Temple',
-    'Mountain View Point',
-    'Traditional Market',
-    'Sunset Beach',
-  ];
+  List<Map<String, dynamic>> get stopTitles {
+    if (widget.package?['tour_stops'] != null) {
+      return List<Map<String, dynamic>>.from(widget.package!['tour_stops']);
+    }
+    return [];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    audioPlayer = AudioPlayer();
+  }
 
   void onSeek(double value) {
     currentPositionNotifier.value = value;
@@ -65,8 +73,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     super.dispose();
   }
 
-  static const heroImage =
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop';
+  String get heroImage => widget.package?['cover_image']?['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image';
 
   static const tanahLotPhotos = <String>[
     'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1600&auto=format&fit=crop',
@@ -162,9 +169,9 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: _EllaDetailsSection(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _EllaDetailsSection(package: widget.package),
                 ),
                 const SizedBox(height: 16),
 
@@ -202,9 +209,10 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'Trip to Ella',
+                    'Trip to ${widget.package?['title'] ?? 'Package'}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -213,14 +221,14 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
-                    children: List.generate(5, (index) {
+                    children: List.generate(stopTitles.length, (index) {
+                      final stop = stopTitles[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _AudioCard(
-                          title: stopTitles[index],
-                          description:
-                              'Tanah Lot Temple is one of Bali\'s most iconic landmarks, known for its stunning offshore setting and beautiful sunset views. ',
-                          image: tanahLotPhotos[index % tanahLotPhotos.length],
+                          title: stop['stop_name'] ?? 'Stop ${index + 1}',
+                          description: stop['description'] ?? 'No description available.',
+                          image: 'https://via.placeholder.com/400x250.png?text=Stop+${index + 1}',
                           index: index,
                           onPlayAudio: () => _onPlayAudio(index),
                           isCurrentlyPlaying:
@@ -398,7 +406,9 @@ class _CircleIconButton extends StatelessWidget {
 
 // New Ella-style details section
 class _EllaDetailsSection extends StatelessWidget {
-  const _EllaDetailsSection();
+  final Map<String, dynamic>? package;
+
+  const _EllaDetailsSection({this.package});
 
   @override
   Widget build(BuildContext context) {
@@ -410,9 +420,9 @@ class _EllaDetailsSection extends StatelessWidget {
         // Title + rating + distance
         Row(
           children: [
-            const Text(
-              'Ella',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            Text(
+              package?['title'] ?? 'Package Title',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
             ),
             const SizedBox(width: 6),
             const Icon(Icons.star, color: Colors.amber, size: 14),
@@ -540,9 +550,8 @@ class _EllaDetailsSection extends StatelessWidget {
               height: 1.4,
             ),
             children: [
-              const TextSpan(
-                text:
-                    'Tanah Lot Temple is one of Bali\'s most iconic for known its stunning offshore setting and beautiful sunset views. The temple is perched on a rock formation, surrounded by the sea during high tide, which makes it ',
+              TextSpan(
+                text: package?['description'] ?? 'No description available.',
               ),
               TextSpan(
                 text: 'Read more...',
@@ -558,26 +567,26 @@ class _EllaDetailsSection extends StatelessWidget {
         const SizedBox(height: 14),
         // Info row
         Row(
-          children: const [
-            Expanded(
+          children: [
+            const Expanded(
               child: _InfoColumn(
                 icon: Icons.location_on_outlined,
                 title: 'Location',
-                subtitle: 'Badulla, Uva',
+                subtitle: 'Location TBD',
               ),
             ),
             Expanded(
               child: _InfoColumn(
                 icon: Icons.person_outline,
-                title: 'Tour Producer',
-                subtitle: 'Perera',
+                title: 'Tour Guide',
+                subtitle: package?['guide']?['user']?['name'] ?? 'Guide Name',
               ),
             ),
             Expanded(
               child: _InfoColumn(
                 icon: Icons.attach_money,
                 title: 'Price',
-                subtitle: '\$4 - \$5 USD',
+                subtitle: '\$${(package?['price'] ?? 0).toStringAsFixed(0)} USD',
               ),
             ),
           ],
@@ -615,7 +624,7 @@ class _InfoColumn extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           subtitle,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
           textAlign: TextAlign.center,
         ),
       ],
@@ -663,6 +672,7 @@ class _AudioCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -876,3 +886,4 @@ class _RadioOption extends StatelessWidget {
     );
   }
 }
+

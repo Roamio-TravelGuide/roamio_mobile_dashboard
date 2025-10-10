@@ -55,6 +55,8 @@ class _MyTripsState extends State<MyTrips> {
     _fetchMyTrips();
   }
 
+  List<Map<String, dynamic>> rawPackages = [];
+
   Future<void> _fetchMyTrips() async {
   setState(() {
     isLoading = true;
@@ -71,6 +73,8 @@ class _MyTripsState extends State<MyTrips> {
       final List<dynamic> data = response['data'];
       print('DEBUG: parsed data = $data');
 
+      rawPackages = List<Map<String, dynamic>>.from(data);
+
       packages = data
           .map(
             (pkg) => TravelPackage(
@@ -78,7 +82,7 @@ class _MyTripsState extends State<MyTrips> {
               title: pkg['title'] ?? '',
               destination: pkg['destination'] ?? '', // optional
               price: (pkg['price'] ?? 0).toDouble(),
-              image: 'https://via.placeholder.com/400x250.png?text=No+Image',
+              image: pkg['cover_image'] != null ? pkg['cover_image']['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image' : 'https://via.placeholder.com/400x250.png?text=No+Image',
               isDownloaded: false,
               description: pkg['description'] ?? '',
             ),
@@ -165,7 +169,11 @@ class _MyTripsState extends State<MyTrips> {
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: GestureDetector(
                           onTap: () {
-                            // TODO: Pass package details to your details page
+                            // Find the index of the current package
+                            final index = packages.indexOf(package);
+                            final rawPackage = index >= 0 && index < rawPackages.length ? rawPackages[index] : null;
+
+                            // Pass package details to your details page
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -176,7 +184,7 @@ class _MyTripsState extends State<MyTrips> {
                                     ),
                                     canvasColor: const Color(0xFF0D0D12),
                                   ),
-                                  child: const DestinationDetailsPage(),
+                                  child: DestinationDetailsPage(package: rawPackage),
                                 ),
                               ),
                             );
