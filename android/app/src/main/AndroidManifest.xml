@@ -2,14 +2,10 @@
     <application
         android:label="roamio_mobile_dashbaord"
         android:name="${applicationName}"
-<<<<<<< HEAD
         android:icon="@mipmap/ic_launcher"
         tools:replace="android:label"
         android:launchMode="singleTop">
         
-=======
-        android:icon="@mipmap/ic_launcher">
->>>>>>> 66deb17a0e5cef4eab4af99e5c64c87b3aa872e5
         <activity
             android:name=".MainActivity"
             android:exported="true"

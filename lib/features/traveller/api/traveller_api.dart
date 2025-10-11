@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/api/api_client.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http; 
+import 'package:image_picker/image_picker.dart'; // Add this import
+import '../../auth/api/auth_api.dart';
 
 class TravellerApi {
   final ApiClient apiClient;
@@ -18,7 +22,7 @@ class TravellerApi {
     bool disablePagination = false,
   }) async {
     try {
-      print('Fetching tours with params: search=$search, location=$location, status=$status');
+      // print('Fetching tours with params: search=$search, location=$location, status=$status');
 
       // Build query parameters
       final Map<String, String> queryParams = {};
@@ -37,8 +41,8 @@ class TravellerApi {
         queryParameters: queryParams,
       );
 
-      print('API Response Status: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
+      // print('API Response Status: ${response.statusCode}');
+      // print('API Response Body: ${response.body}');
 
       // Parse response
       if (response.statusCode == 200) {
@@ -166,4 +170,100 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
       }
     };
   }
+
+
+  Future<List<Map<String, dynamic>>> getNearbyRestaurants({
+    required double lat,
+    required double lng,
+    double radius = 500,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        '/pois/nearby',
+        queryParameters: {
+          'lat': lat.toString(), // Convert double to string
+          'lng': lng.toString(), // Convert double to string
+          'radius': radius.toString(),
+          'category': 'restaurant',
+        },
+      );
+
+      // Parse the response body
+      final responseBody = json.decode(response.body);
+      
+      // Access the data using proper Map syntax
+      if (responseBody['success'] == true && responseBody['data'] != null) {
+        final pois = responseBody['data'] as List;
+        return pois.map((poi) {
+          return {
+            'name': poi['name'] ?? 'Unknown Restaurant',
+            'description': poi['description'] ?? 'No description available',
+            'image': poi['image'] ?? 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=200&fit=crop',
+            'rating': (poi['rating'] as num?)?.toDouble() ?? 4.5,
+          };
+        }).toList();
+      }
+    } catch (e) {
+      // Silent fail - return empty list
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createHiddenPlace({
+  required String name,
+  required String description,
+  required double latitude,
+  required double longitude,
+  required String address,
+  required List<XFile> images,
+}) async {
+  try {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${apiClient.baseUrl}/hiddenGem/create'),
+    );
+
+    // Add only place data (NO user_id)
+    request.fields['name'] = name;
+    request.fields['description'] = description;
+    request.fields['latitude'] = latitude.toString();
+    request.fields['longitude'] = longitude.toString();
+    request.fields['address'] = address;
+
+    // Add image files - CROSS-PLATFORM SOLUTION
+    for (int i = 0; i < images.length; i++) {
+      final image = images[i];
+      
+      // Read bytes from XFile (works on both web and mobile)
+      final bytes = await image.readAsBytes();
+      
+      // Create multipart file from bytes
+      final file = http.MultipartFile.fromBytes(
+        'images',
+        bytes,
+        filename: 'image_${i}_{DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      request.files.add(file);
+    }
+
+    // Add auth headers (JWT token)
+    final token = await AuthApi.getAuthToken();
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final response = await request.send().timeout(const Duration(seconds: 30));
+    final responseString = await response.stream.bytesToString();
+
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(responseString);
+    } else {
+      throw Exception('Failed to create hidden place: ${response.statusCode} - $responseString');
+    }
+  } catch (e) {
+    throw Exception('Error creating hidden place: $e');
+  }
 }
+}
+
