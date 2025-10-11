@@ -109,16 +109,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
   }
 
   void _navigateToAddHiddenPage(BuildContext context) {
-    print('=== NAVIGATION DEBUG ===');
-    print('User role: $userRole');
-    
     if (userRole == 'travel_guide') {
       final route = '${AppRoutes.guide}/${AppRoutes.addHiddenPage}';
-      print('Navigating to: $route');
       context.go(route);
     } else {
       final route = '${AppRoutes.traveler}/${AppRoutes.addHiddenPage}';
-      print('Navigating to: $route');
       context.go(route);
     }
   }

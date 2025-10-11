@@ -14,24 +14,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-// class ScaffoldWithNavBar extends StatelessWidget {
-//   final int currentIndex;
-//   final Widget child;
-
-//   const ScaffoldWithNavBar({
-//     Key? key,
-//     required this.currentIndex,
-//     required this.child,
-//   }) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: child,
-//       bottomNavigationBar: CustomBottomNavigationBar(
-//         currentIndex: currentIndex,
-//       ),
-//     );
-//   }
-// }
