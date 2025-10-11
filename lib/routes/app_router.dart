@@ -14,6 +14,7 @@ import '../features/Landing/presentation/screens/select_user.dart';
 import '../features/tourguide/presentation/screens/guide_landing.dart';
 import '../features/tourguide/presentation/screens/earnings.dart';
 import '../features/tourguide/presentation/screens/profile.dart';
+import '../features/tourguide/presentation/screens/guide_mytrip.dart'; 
 
 import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip.dart';
@@ -108,29 +109,26 @@ final GoRouter appRouter = GoRouter(
         );
       },
       routes: [
-        // Guide home is the default route
         GoRoute(
-  path: '${AppRoutes.guide}/:tab', // Remove the strict pattern matching
-  builder: (context, state) {
-    final tab = state.pathParameters['tab'] ?? AppRoutes.guideHome;
-    switch (tab) {
-      case AppRoutes.guideHome:
-        return const GuideLandingScreen();
-      case AppRoutes.guideMyTrips:
-        return const MyTripScreen();
-      case AppRoutes.guideEarnings:
-        return const EarningsScreen();
-      case AppRoutes.guideProfile:
-        return const GuideProfilePage();
-      case AppRoutes.addHiddenPage:
-        // print('Building AddHiddenPage for guide');
-        return const AddHiddenPage();
-      default:
-        // print('Unknown guide tab: $tab, defaulting to home');
-        return const GuideLandingScreen();
-    }
-  },
-),
+          path: '${AppRoutes.guide}/:tab',
+          builder: (context, state) {
+            final tab = state.pathParameters['tab'] ?? AppRoutes.guideHome;
+            switch (tab) {
+              case AppRoutes.guideHome:
+                return const GuideLandingScreen();
+              case AppRoutes.guideMyTrips:
+                return const GuideMyTripsScreen(); // Updated to use renamed class
+              case AppRoutes.guideEarnings:
+                return const EarningsScreen();
+              case AppRoutes.guideProfile:
+                return const GuideProfilePage();
+              case AppRoutes.addHiddenPage:
+                return const AddHiddenPage();
+              default:
+                return const GuideLandingScreen();
+            }
+          },
+        ),
       ],
     ),
     
@@ -153,29 +151,26 @@ final GoRouter appRouter = GoRouter(
         );
       },
       routes: [
-        // Traveler home is the default route
         GoRoute(
-  path: '${AppRoutes.traveler}/:tab', // Remove the strict pattern matching
-  builder: (context, state) {
-    final tab = state.pathParameters['tab'] ?? AppRoutes.travelerHome;
-    switch (tab) {
-      case AppRoutes.travelerHome:
-        return const HomePage();
-      case AppRoutes.travelerMyTrips:
-        return const MyTrips();
-      case AppRoutes.travelerFavorites:
-        return const FavoritesScreen();
-      case AppRoutes.travelerProfile:
-        return const TravelerProfilePage();
-      case AppRoutes.addHiddenPage:
-        // print('Building AddHiddenPage for traveler');
-        return const AddHiddenPage();
-      default:
-        // print('Unknown traveler tab: $tab, defaulting to home');
-        return const HomePage();
-    }
-  },
-),
+          path: '${AppRoutes.traveler}/:tab',
+          builder: (context, state) {
+            final tab = state.pathParameters['tab'] ?? AppRoutes.travelerHome;
+            switch (tab) {
+              case AppRoutes.travelerHome:
+                return const HomePage();
+              case AppRoutes.travelerMyTrips:
+                return const MyTrips(); // Keep original traveler class
+              case AppRoutes.travelerFavorites:
+                return const FavoritesScreen();
+              case AppRoutes.travelerProfile:
+                return const TravelerProfilePage();
+              case AppRoutes.addHiddenPage:
+                return const AddHiddenPage();
+              default:
+                return const HomePage();
+            }
+          },
+        ),
       ],
     ),
   ],
