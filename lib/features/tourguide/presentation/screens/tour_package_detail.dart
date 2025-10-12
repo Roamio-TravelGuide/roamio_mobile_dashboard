@@ -5,6 +5,9 @@ import '../../../../core/services/tour_package_service.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/config/env_config.dart';
 import '../../api/tour_package_api.dart';
+import '../../../../core/widgets/tour_stop_card.dart';
+import '../../../../core/widgets/tour_route_map.dart';
+import '../../../../core/widgets/tour_stop_map.dart';
 
 class TourPackageDetailScreen extends StatefulWidget {
   final int tourPackageId;
@@ -19,6 +22,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
   late Future<TourPackage> _tourPackageFuture;
   bool _isLoading = false;
   late TourPackageService _tourPackageService;
+  int? _expandedStopIndex;
 
   @override
   void initState() {
@@ -78,11 +82,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 64,
-          ),
+          const Icon(Icons.error_outline, color: Colors.red, size: 64),
           const SizedBox(height: 16),
           Text(
             'Failed to load tour package',
@@ -118,11 +118,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.travel_explore,
-            color: Colors.white54,
-            size: 64,
-          ),
+          const Icon(Icons.travel_explore, color: Colors.white54, size: 64),
           const SizedBox(height: 16),
           Text(
             'Tour package not found',
@@ -139,179 +135,176 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
   Widget _buildTourPackageDetail(TourPackage tourPackage) {
     return CustomScrollView(
       slivers: [
-        SliverAppBar(
-          expandedHeight: 300,
-          stretch: true,
-          flexibleSpace: FlexibleSpaceBar(
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  tourPackage.coverImageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: const Color(0xFF1E1E2E),
-                      child: const Icon(
-                        Icons.photo,
-                        color: Colors.white54,
-                        size: 64,
-                      ),
-                    );
-                  },
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+        _buildAppBar(tourPackage),
+        _buildContent(tourPackage),
+      ],
+    );
+  }
+
+  SliverAppBar _buildAppBar(TourPackage tourPackage) {
+    return SliverAppBar(
+      expandedHeight: 300,
+      stretch: true,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              tourPackage.coverImageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: const Color(0xFF1E1E2E),
+                  child: const Icon(Icons.photo, color: Colors.white54, size: 64),
+                );
+              },
             ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
           ),
-          backgroundColor: Colors.transparent,
-          leading: IconButton(
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      actions: [
+        if (tourPackage.status == PackageStatus.published)
+          IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.white),
+              child: const Icon(Icons.edit, color: Colors.white),
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => _editTourPackage(tourPackage),
           ),
-          actions: [
-            if (tourPackage.status == PackageStatus.published)
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.edit, color: Colors.white),
-                ),
-                onPressed: () => _editTourPackage(tourPackage),
-              ),
+      ],
+    );
+  }
+
+  SliverToBoxAdapter _buildContent(TourPackage tourPackage) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatusBadge(tourPackage.status),
+            const SizedBox(height: 16),
+            _buildTitleSection(tourPackage),
+            const SizedBox(height: 16),
+            _buildDescriptionSection(tourPackage),
+            const SizedBox(height: 24),
+            _buildTourDetailsSection(tourPackage),
+            const SizedBox(height: 24),
+            _buildGuideSection(tourPackage.guide),
+            const SizedBox(height: 24),
+            _buildTourStopsSection(tourPackage.tourStops),
+            const SizedBox(height: 24),
+            _buildActionButtons(tourPackage),
+            const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
 
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatusBadge(tourPackage.status),
-                const SizedBox(height: 16),
-                
-                // Title and Price
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        tourPackage.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      tourPackage.priceFormatted,
-                      style: const TextStyle(
-                        color: Color(0xFF6366F1),
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+  Widget _buildTitleSection(TourPackage tourPackage) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title and Price
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                tourPackage.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-
-                const SizedBox(height: 8),
-
-                // Rating and Duration
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      tourPackage.averageRating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '(${tourPackage.reviewCount} reviews)',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.schedule, color: Colors.white54, size: 18),
-                    const SizedBox(width: 4),
-                    Text(
-                      tourPackage.durationFormatted,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Description
-                Text(
-                  tourPackage.description ?? 'No description available',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Tour Details
-                _buildTourDetailsSection(tourPackage),
-
-                const SizedBox(height: 24),
-
-                // Guide Information
-                _buildGuideSection(tourPackage.guide),
-
-                const SizedBox(height: 24),
-
-                // Tour Stops
-                _buildTourStopsSection(tourPackage.tourStops),
-
-                const SizedBox(height: 24),
-
-                // Action Buttons
-                _buildActionButtons(tourPackage),
-
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(width: 16),
+            Text(
+              tourPackage.priceFormatted,
+              style: const TextStyle(
+                color: Color(0xFF6366F1),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Rating and Duration
+        Row(
+          children: [
+            const Icon(Icons.star, color: Colors.amber, size: 20),
+            const SizedBox(width: 4),
+            Text(
+              tourPackage.averageRating.toStringAsFixed(1),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '(${tourPackage.reviewCount} reviews)',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Icon(Icons.schedule, color: Colors.white54, size: 18),
+            const SizedBox(width: 4),
+            Text(
+              tourPackage.durationFormatted,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildDescriptionSection(TourPackage tourPackage) {
+    return Text(
+      tourPackage.description ?? 'No description available',
+      style: TextStyle(
+        color: Colors.white.withOpacity(0.8),
+        fontSize: 16,
+        height: 1.5,
+      ),
     );
   }
 
@@ -338,22 +331,12 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
             spacing: 16,
             runSpacing: 12,
             children: [
-              _buildDetailItem(
-                Icons.download,
-                'Downloads',
-                '${tourPackage.downloadCount}',
-              ),
-              _buildDetailItem(
-                Icons.calendar_today,
-                'Created',
-                DateFormat('MMM dd, yyyy').format(tourPackage.createdAt),
-              ),
+              _buildDetailItem(Icons.download, 'Downloads', '${tourPackage.downloadCount}'),
+              _buildDetailItem(Icons.calendar_today, 'Created', 
+                DateFormat('MMM dd, yyyy').format(tourPackage.createdAt)),
               if (tourPackage.updatedAt != null)
-                _buildDetailItem(
-                  Icons.update,
-                  'Last Updated',
-                  DateFormat('MMM dd, yyyy').format(tourPackage.updatedAt!),
-                ),
+                _buildDetailItem(Icons.update, 'Last Updated', 
+                  DateFormat('MMM dd, yyyy').format(tourPackage.updatedAt!)),
             ],
           ),
         ],
@@ -378,10 +361,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               Text(
                 value,
@@ -399,24 +379,8 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
   }
 
   Widget _buildStatusBadge(PackageStatus status) {
-    Color backgroundColor;
-    String statusText;
-
-    switch (status) {
-      case PackageStatus.published:
-        backgroundColor = Colors.green;
-        statusText = 'Published';
-        break;
-      case PackageStatus.pending_approval:
-        backgroundColor = Colors.orange;
-        statusText = 'Pending Approval';
-        break;
-      case PackageStatus.rejected:
-        backgroundColor = Colors.red;
-        statusText = 'Rejected';
-        break;
-    }
-
+    final (backgroundColor, statusText) = _getStatusInfo(status);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -427,11 +391,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getStatusIcon(status),
-            color: backgroundColor,
-            size: 16,
-          ),
+          Icon(_getStatusIcon(status), color: backgroundColor, size: 16),
           const SizedBox(width: 6),
           Text(
             statusText,
@@ -444,6 +404,17 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
         ],
       ),
     );
+  }
+
+  (Color, String) _getStatusInfo(PackageStatus status) {
+    switch (status) {
+      case PackageStatus.published:
+        return (Colors.green, 'Published');
+      case PackageStatus.pending_approval:
+        return (Colors.orange, 'Pending Approval');
+      case PackageStatus.rejected:
+        return (Colors.red, 'Rejected');
+    }
   }
 
   IconData _getStatusIcon(PackageStatus status) {
@@ -541,6 +512,17 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
+          'Tour Route & Stops',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildFullRouteMap(tourStops),
+        const SizedBox(height: 24),
+        const Text(
           'Tour Stops',
           style: TextStyle(
             color: Colors.white,
@@ -549,143 +531,136 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (tourStops.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E2E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'No tour stops added yet',
-              style: TextStyle(
-                color: Colors.white54,
-              ),
-            ),
-          )
-        else
-          ListView.separated(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: tourStops.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final stop = tourStops[index];
-              return _buildTourStopCard(stop, index);
-            },
-          ),
+        tourStops.isEmpty ? _buildEmptyStopsState() : _buildStopsList(tourStops),
       ],
     );
   }
 
-  Widget _buildTourStopCard(TourStop stop, int index) {
+  Widget _buildFullRouteMap(List<TourStop> tourStops) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Complete Route',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: TourRouteMap(
+              tourStops: tourStops,
+              showRouteLine: true,
+              onStopTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tap on individual stops below for details'),
+                    backgroundColor: Color(0xFF6366F1),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStopsList(List<TourStop> tourStops) {
+    return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: tourStops.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        return TourStopCard(
+          stop: tourStops[index],
+          index: index,
+          isExpanded: _expandedStopIndex == index,
+          onTap: () {
+            setState(() {
+              _expandedStopIndex = _expandedStopIndex == index ? null : index;
+            });
+          },
+          onMapTap: () => _showStopMapFullScreen(tourStops[index], index),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyStopsState() {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E2E),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
-                    shape: BoxShape.circle,
+      child: const Center(
+        child: Text(
+          'No tour stops added yet',
+          style: TextStyle(color: Colors.white54),
+        ),
+      ),
+    );
+  }
+
+  void _showStopMapFullScreen(TourStop stop, int index) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D0D12),
+      builder: (context) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.9,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E1E2E),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${index + 1}. ${stop.stopName}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        stop.stopName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (stop.description != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          stop.description!,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                      if (stop.location != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, color: Colors.white54, size: 14),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                stop.location!.formattedAddress,
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (stop.mediaUrls.isNotEmpty)
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: stop.mediaUrls.length,
-                itemBuilder: (context, mediaIndex) {
-                  return Container(
-                    width: 160,
-                    margin: EdgeInsets.only(
-                      right: mediaIndex < stop.mediaUrls.length - 1 ? 8 : 0,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(
-                        image: NetworkImage(stop.mediaUrls[mediaIndex]),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
               ),
-            ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
+              Expanded(
+                child: TourStopMap(
+                  stopLocation: stop.location!,
+                  stopName: stop.stopName,
+                  stopNumber: index + 1,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -700,9 +675,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF6366F1),
                   side: const BorderSide(color: Color(0xFF6366F1)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text('Manage Bookings'),
@@ -714,9 +687,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
                 onPressed: () => _editTourPackage(tourPackage),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text('Edit Tour'),
@@ -733,9 +704,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange,
               side: const BorderSide(color: Colors.orange),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: const Text('View Submission Status'),
@@ -767,10 +736,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
                   const SizedBox(height: 4),
                   Text(
                     tourPackage.rejectionReason ?? 'No reason provided',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -782,9 +748,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
                 onPressed: _resubmitTourPackage,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
@@ -830,23 +794,18 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
   }
 
   Future<void> _resubmitTourPackage() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       await _tourPackageService.updateTourPackageStatus(
         widget.tourPackageId,
         status: PackageStatus.pending_approval,
       );
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tour package resubmitted for review'),
           backgroundColor: Colors.green,
         ),
       );
-
       _loadTourPackage();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -856,9 +815,7 @@ class _TourPackageDetailScreenState extends State<TourPackageDetailScreen> {
         ),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 }
