@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/api/api_client.dart';
 
 class TravellerApi {
@@ -18,9 +17,10 @@ class TravellerApi {
     bool disablePagination = false,
   }) async {
     try {
-      print('Fetching tours with params: search=$search, location=$location, status=$status');
+      print(
+        'Fetching tours with params: search=$search, location=$location, status=$status',
+      );
 
-      // Build query parameters
       final Map<String, String> queryParams = {};
       if (status != null) queryParams['status'] = status;
       if (search != null) queryParams['search'] = search;
@@ -31,7 +31,6 @@ class TravellerApi {
       queryParams['limit'] = limit.toString();
       queryParams['disablePagination'] = disablePagination.toString();
 
-      // Make API request using ApiClient
       final response = await apiClient.get(
         '/tour-package',
         queryParameters: queryParams,
@@ -40,59 +39,124 @@ class TravellerApi {
       print('API Response Status: ${response.statusCode}');
       print('API Response Body: ${response.body}');
 
-      // Parse response
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
-        
-        // Check if the response structure matches what we expect
         if (responseBody is Map<String, dynamic>) {
           return responseBody;
         } else {
-          throw Exception('Invalid response format: Expected Map<String, dynamic>');
+          throw Exception(
+            'Invalid response format: Expected Map<String, dynamic>',
+          );
         }
       } else if (response.statusCode == 401) {
         throw Exception('Unauthorized: Please login again');
       } else if (response.statusCode == 404) {
-        throw Exception('Endpoint not found: /tour-packages');
+        throw Exception('Endpoint not found: /tour-package');
       } else {
-        throw Exception('Failed to load tours: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Failed to load tours: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (error) {
       print('Error fetching tours: $error');
-      // Return a sample response for debugging
-      return _getSampleResponse();
+      rethrow; // Let the caller handle the error
     }
   }
 
-  // Fallback sample response for debugging
-  Map<String, dynamic> _getSampleResponse() {
-    return {
-      'success': true,
-      'data': {
-        'packages': [
-          {
-            'id': '1',
-            'title': 'Raja Ampat Islands',
-            'imageUrl': 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop',
-            'location': 'West Papua',
-            'rating': 4.9,
-            'price': 235.00,
-            'description': 'Beautiful islands with rich marine biodiversity',
-          },
-          {
-            'id': '2',
-            'title': 'Tanah Lot Temple',
-            'imageUrl': 'https://images.unsplash.com/photo-1596436889106-be35e8435c76?q=80&w=1600&auto=format&fit=crop',
-            'location': 'Tabanan, Bali',
-            'rating': 4.7,
-            'price': 15.00,
-            'description': 'Famous sea temple in Bali',
-          },
-        ],
-        'total': 2,
-        'page': 1,
-        'limit': 10
+  Future<Map<String, dynamic>> getProfile(String userId) async {
+    try {
+      print('Fetching profile for user: $userId');
+
+      final response = await apiClient.get(
+        '/users/travelerProfile/$userId',
+        queryParameters: {
+          'ts': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      );
+
+      print('Profile API Response Status: ${response.statusCode}');
+      print('Profile API Response Body: ${response.body}');
+
+      if (response.body.trim().startsWith('<!DOCTYPE') ||
+          response.body.trim().startsWith('<html')) {
+        throw Exception(
+          'Server returned HTML instead of JSON. Check API endpoint.',
+        );
       }
-    };
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else {
+          throw Exception(
+            'Invalid response format: Expected Map<String, dynamic>',
+          );
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized: Please login again');
+      } else if (response.statusCode == 404) {
+        throw Exception('Profile not found for user: $userId');
+      } else {
+        throw Exception(
+          'Failed to load profile: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (error) {
+      print('Error fetching profile: $error');
+      rethrow; // Let the caller handle the error
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(
+    String userId,
+    Map<String, dynamic> profileData,
+  ) async {
+    try {
+      print("🔄 Starting profile update...");
+      print("👤 User ID: $userId");
+      print("📝 Profile Data (original):");
+      profileData.forEach((key, value) => print("  - $key: $value"));
+      
+      // Prepare the request data
+      final requestData = {
+        'userId': int.parse(userId),  // Convert userId to integer
+        'id': int.parse(userId),      // Add id field as some APIs expect this
+        'type': 'traveller',
+        ...profileData,
+      };
+      
+      print("📤 Final request data:");
+      requestData.forEach((key, value) => print("  - $key: $value ($runtimeType)"));
+      
+      final response = await apiClient.put(
+        '/users/profile/$userId',
+        requestData,
+      );
+
+      print('Update response status: ${response.statusCode}');
+      print('Update response body: ${response.body}');
+
+      // Check for HTML error response
+      if (response.body.trim().toLowerCase().startsWith('<!doctype html>') ||
+          response.body.trim().toLowerCase().startsWith('<html')) {
+        throw Exception('Server returned HTML instead of JSON. Please check the API endpoint.');
+      }
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          print('Profile updated successfully');
+          return responseBody;
+        } else {
+          throw Exception("Invalid response format: Expected JSON object");
+        }
+      } else {
+        throw Exception("Update failed: ${response.statusCode} - ${response.body}");
+      }
+    } catch (error) {
+      print("Error updating profile: $error");
+      rethrow;
+    }
   }
 }
