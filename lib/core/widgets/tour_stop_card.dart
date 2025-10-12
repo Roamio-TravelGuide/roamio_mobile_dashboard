@@ -1,10 +1,10 @@
-// widgets/tour_stop_card.dart
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/tour_package.dart';
-import 'audio_player_widget.dart';
+import './audio_player_widget.dart';
 import './tour_route_map.dart';
 import './tour_stop_map.dart';
+import '../services/media_service.dart';
 
 class TourStopCard extends StatefulWidget {
   final TourStop stop;
@@ -181,77 +181,105 @@ class _TourStopCardState extends State<TourStopCard> {
   }
 
   Widget _buildMediaSection() {
-    final images = widget.stop.media
-        .where((media) => media.mediaType == MediaType.image)
-        .toList();
-    final audios = widget.stop.media
-        .where((media) => media.mediaType == MediaType.audio)
-        .toList();
+  final images = widget.stop.media
+      .where((media) => media.mediaType == MediaType.image)
+      .toList();
+  final audios = widget.stop.media
+      .where((media) => media.mediaType == MediaType.audio)
+      .toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (images.isNotEmpty) ...[
-          const Text(
-            'Images',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (images.isNotEmpty) ...[
+        const Text(
+          'Images',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                final media = images[index];
-                return Container(
-                  width: 160,
-                  margin: EdgeInsets.only(
-                    right: index < images.length - 1 ? 8 : 0,
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              final media = images[index];
+              final fullImageUrl = MediaService.getFullUrl(media.url);
+              
+              return Container(
+                width: 160,
+                margin: EdgeInsets.only(
+                  right: index < images.length - 1 ? 8 : 0,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    fullImageUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[800],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / 
+                                  loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      print('Image load error: $error for URL: $fullImageUrl');
+                      return Container(
+                        color: Colors.grey[800],
+                        child: const Icon(Icons.broken_image, color: Colors.white54),
+                      );
+                    },
                   ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(media.url),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        
-        if (audios.isNotEmpty) ...[
-          const Text(
-            'Audio Guides',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Column(
-            children: audios.asMap().entries.map((entry) {
-              final index = entry.key;
-              final audio = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(bottom: index < audios.length - 1 ? 12 : 0),
-                child: AudioPlayerWidget(
-                  audioUrl: audio.url,
-                  title: 'Audio ${index + 1}',
                 ),
               );
-            }).toList(),
+            },
           ),
-        ],
+        ),
+        const SizedBox(height: 16),
       ],
-    );
-  }
+      
+      if (audios.isNotEmpty) ...[
+        const Text(
+          'Audio Guides',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: audios.asMap().entries.map((entry) {
+            final index = entry.key;
+            final audio = entry.value;
+            final fullAudioUrl = MediaService.getFullUrl(audio.url);
+            
+            return Padding(
+              padding: EdgeInsets.only(bottom: index < audios.length - 1 ? 12 : 0),
+              child: AudioPlayerWidget(
+                audioUrl: fullAudioUrl,
+                title: 'Audio ${index + 1}',
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    ],
+  );
+}
 }
