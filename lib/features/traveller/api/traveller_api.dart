@@ -1,8 +1,7 @@
 import 'dart:convert';
 import '../../../../core/api/api_client.dart';
-import 'dart:io';
-import 'package:http/http.dart' as http; 
-import 'package:image_picker/image_picker.dart'; // Add this import
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../../auth/api/auth_api.dart';
 
 class TravellerApi {
@@ -64,6 +63,7 @@ class TravellerApi {
       rethrow; // Let the caller handle the error
     }
   }
+  
 Future<Map<String, dynamic>> getMyTrips() async {
 try {
   final response = await apiClient.get('/traveller/my-trips');
@@ -141,6 +141,12 @@ Future<Map<String, dynamic>> createPaymentIntent(double amount, {String? package
         throw Exception(
           'Failed to load profile: ${response.statusCode} - ${response.body}',
         );
+      }
+    } catch (error) {
+      print('Error fetching profile: $error');
+      rethrow;
+    }
+  }
 Future<Map<String, dynamic>> createStripPayment(Map<String, dynamic> paymentIntentData) async {
   try {
     final response = await apiClient.post('/payment/create-strip-payment', paymentIntentData);
@@ -174,40 +180,6 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
     return {'success': false, 'data': [], 'message': error.toString()};
   }
 }
-  // Fallback sample response for debugging
-  Map<String, dynamic> _getSampleResponse() {
-    return {
-      'success': true,
-      'data': {
-        'packages': [
-          {
-            'id': '1',
-            'title': 'Raja Ampat Islands',
-            'imageUrl': 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop',
-            'location': 'West Papua',
-            'rating': 4.9,
-            'price': 235.00,
-            'description': 'Beautiful islands with rich marine biodiversity',
-          },
-          {
-            'id': '2',
-            'title': 'Tanah Lot Temple',
-            'imageUrl': 'https://images.unsplash.com/photo-1596436889106-be35e8435c76?q=80&w=1600&auto=format&fit=crop',
-            'location': 'Tabanan, Bali',
-            'rating': 4.7,
-            'price': 15.00,
-            'description': 'Famous sea temple in Bali',
-          },
-        ],
-        'total': 2,
-        'page': 1,
-        'limit': 10
-      }
-    } catch (error) {
-      print('Error fetching profile: $error');
-      rethrow; // Let the caller handle the error
-    }
-  }
 
   Future<Map<String, dynamic>> updateProfile(
     String userId,
@@ -260,8 +232,6 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
       rethrow;
     }
   }
-}
-
 
   Future<List<Map<String, dynamic>>> getNearbyRestaurants({
     required double lat,
@@ -357,4 +327,3 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
   }
 }
 }
-
