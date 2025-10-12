@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import './tour_package_detail.dart';
+import '../../../../core/services/tour_package_service.dart';
+import '../../../../core/models/tour_package.dart';
+import '../../api/tour_package_api.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/config/env_config.dart';
+import '../../api/tour_package_api.dart';
+import '../../../auth/api/auth_api.dart';
 
 class GuideMyTripsScreen extends StatefulWidget {
   const GuideMyTripsScreen({super.key});
@@ -8,82 +16,71 @@ class GuideMyTripsScreen extends StatefulWidget {
 }
 
 class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
-  final List<TourTrip> _trips = [
-    TourTrip(
-      id: '1',
-      title: 'Bali Cultural Tour',
-      description: 'Explore the rich cultural heritage of Bali with traditional temple visits and local crafts',
-      coverImage: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      date: '2024-01-15',
-      duration: '8 hours',
-      price: '\$120',
-      groupSize: 12,
-      rating: 4.8,
-      status: TripStatus.pending,
-      bookings: 5,
-    ),
-    TourTrip(
-      id: '2',
-      title: 'Ubud Waterfall Adventure',
-      description: 'Discover hidden waterfalls and lush jungles in the heart of Ubud',
-      coverImage: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      date: '2024-01-10',
-      duration: '6 hours',
-      price: '\$95',
-      groupSize: 8,
-      rating: 4.9,
-      status: TripStatus.approved,
-      bookings: 8,
-    ),
-    TourTrip(
-      id: '3',
-      title: 'Sunset Beach Tour',
-      description: 'Experience breathtaking sunsets at Bali\'s most beautiful beaches',
-      coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      date: '2024-01-20',
-      duration: '4 hours',
-      price: '\$75',
-      groupSize: 15,
-      rating: 4.7,
-      status: TripStatus.rejected,
-      bookings: 0,
-      rejectionReason: 'Insufficient safety documentation provided',
-    ),
-    TourTrip(
-      id: '4',
-      title: 'Traditional Cooking Class',
-      description: 'Learn authentic Balinese cooking techniques with local chefs',
-      coverImage: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      date: '2024-01-25',
-      duration: '3 hours',
-      price: '\$65',
-      groupSize: 10,
-      rating: 4.6,
-      status: TripStatus.pending,
-      bookings: 3,
-    ),
-  ];
-
+  late TourPackageService _tourPackageService;
+  List<TourPackage> _trips = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
   TripFilter _currentFilter = TripFilter.all;
 
   @override
-  Widget build(BuildContext context) {
-    final filteredTrips = _filterTrips(_trips, _currentFilter);
+  void initState() {
+    super.initState();
+    _initializeService();
+    _loadTourPackages();
+  }
 
+  void _initializeService() {
+    final apiClient = ApiClient(customBaseUrl: EnvConfig.baseUrl);
+    final tourPackageApi = TourPackageApi(apiClient: apiClient);
+    _tourPackageService = TourPackageService(api: tourPackageApi);
+  }
+
+  Future<void> _loadTourPackages() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      final packages = await _tourPackageService.getTourPackagesByGuideId(
+        status: _getStatusFilter(_currentFilter),
+      );
+
+      setState(() {
+        _trips = packages;
+        _isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        _errorMessage = error.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String? _getStatusFilter(TripFilter filter) {
+    switch (filter) {
+      case TripFilter.approved:
+        return 'published';
+      case TripFilter.pending:
+        return 'pending_approval';
+      case TripFilter.rejected:
+        return 'rejected';
+      case TripFilter.all:
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D12),
       body: Column(
         children: [
-          // Header Section
           _buildHeaderSection(),
-          
-          // Filter Chips
           _buildFilterChips(),
-          
-          // Trips List
-          Expanded(
-            child: _buildTripsList(filteredTrips),
-          ),
+          Expanded(child: _buildContent()),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -97,20 +94,17 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
   Widget _buildHeaderSection() {
     return Container(
       height: 200,
-      width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
           colors: [
             const Color(0xFF1a1a2e).withOpacity(0.9),
             const Color(0xFF0D0D12).withOpacity(0.95),
           ],
         ),
       ),
-      child: Stack(
+      child: const Stack(
         children: [
-          const Center(
+          Center(
             child: Icon(
               Icons.travel_explore,
               color: Colors.white,
@@ -128,13 +122,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                shadows: [
-                  Shadow(
-                    blurRadius: 10.0,
-                    color: Colors.black.withOpacity(0.5),
-                    offset: const Offset(1.0, 1.0),
-                  ),
-                ],
               ),
             ),
           ),
@@ -142,7 +129,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
       ),
     );
   }
-
 
   Widget _buildFilterChips() {
     return Container(
@@ -154,23 +140,22 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
-                label: Text(
-                  _getFilterLabel(filter),
-                  style: TextStyle(
-                    color: _currentFilter == filter ? Colors.white : Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: Text(_getFilterLabel(filter)),
                 selected: _currentFilter == filter,
                 onSelected: (selected) {
                   setState(() {
                     _currentFilter = filter;
                   });
+                  _loadTourPackages();
                 },
                 backgroundColor: const Color(0xFF1E1E2E),
                 selectedColor: _getFilterColor(filter),
                 checkmarkColor: Colors.white,
+                labelStyle: TextStyle(
+                  color: _currentFilter == filter ? Colors.white : Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -182,84 +167,93 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
     );
   }
 
-  Widget _buildTripsList(List<TourTrip> trips) {
-    if (trips.isEmpty) {
-      return _buildEmptyState();
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+        ),
+      );
     }
 
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load tours',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadTourPackages,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _trips.isEmpty ? _buildEmptyState() : _buildTripsList();
+  }
+
+  Widget _buildTripsList() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: trips.length,
+      itemCount: _trips.length,
       itemBuilder: (context, index) {
-        final trip = trips[index];
+        final trip = _trips[index];
         return _buildTripCard(trip, context);
       },
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _getEmptyStateIcon(_currentFilter),
-            color: Colors.white.withOpacity(0.5),
-            size: 80,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _getEmptyStateMessage(_currentFilter),
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          if (_currentFilter == TripFilter.all)
-            ElevatedButton(
-              onPressed: _createNewTour,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Create Your First Tour'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTripCard(TourTrip trip, BuildContext context) {
+  Widget _buildTripCard(TourPackage trip, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Card(
         color: const Color(0xFF1E1E2E),
-        shape: RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          // In _buildTripCard method, update the onTap:
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TourPackageDetailScreen(tourPackageId: trip.id),
+              ),
+            );
+          },
           borderRadius: BorderRadius.circular(16),
-        ),
-        elevation: 4,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cover Image Area
-            _buildCoverImageSection(trip),
-            
-            // Trip Details
-            _buildTripDetailsSection(trip, context),
-          ],
+          child: Column(
+            children: [
+              _buildCoverImageSection(trip),
+              _buildTripDetails(trip, context),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCoverImageSection(TourTrip trip) {
+  Widget _buildCoverImageSection(TourPackage trip) {
     return Container(
       height: 140,
-      width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D3E),
         borderRadius: const BorderRadius.only(
@@ -267,13 +261,12 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
           topRight: Radius.circular(16),
         ),
         image: DecorationImage(
-          image: NetworkImage(trip.coverImage),
+          image: NetworkImage(trip.coverImageUrl),
           fit: BoxFit.cover,
         ),
       ),
       child: Stack(
         children: [
-          // Gradient overlay
           Container(
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.only(
@@ -281,17 +274,10 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
                 topRight: Radius.circular(16),
               ),
               gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.5),
-                ],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
               ),
             ),
           ),
-          
-          // Status Badge
           Positioned(
             top: 12,
             right: 12,
@@ -318,46 +304,17 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
               ),
             ),
           ),
-
-          // Bookings Count
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.people, color: Colors.white, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${trip.bookings}/${trip.groupSize}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildTripDetailsSection(TourTrip trip, BuildContext context) {
+  Widget _buildTripDetails(TourPackage trip, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title and Price
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +333,7 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                trip.price,
+                trip.priceFormatted,
                 style: const TextStyle(
                   color: Color(0xFF6366F1),
                   fontSize: 20,
@@ -385,43 +342,32 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 8),
-
-          // Description
           Text(
-            trip.description,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-            ),
+            trip.description ?? 'No description available',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-
           const SizedBox(height: 12),
-
-          // Trip Details Chips
           _buildDetailChips(trip),
-
           const SizedBox(height: 12),
-
-          // Action Buttons
           _buildActionButtons(trip, context),
         ],
       ),
     );
   }
 
-  Widget _buildDetailChips(TourTrip trip) {
+  // ... (other helper methods remain the same as before)
+  Widget _buildDetailChips(TourPackage trip) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        _buildDetailChip(Icons.calendar_today, _formatDate(trip.date)),
-        _buildDetailChip(Icons.schedule, trip.duration),
-        _buildDetailChip(Icons.star, trip.rating.toString()),
-        _buildDetailChip(Icons.people, 'Max ${trip.groupSize}'),
+        _buildDetailChip(Icons.calendar_today, trip.formattedDate),
+        _buildDetailChip(Icons.schedule, trip.durationFormatted),
+        _buildDetailChip(Icons.star, trip.averageRating.toStringAsFixed(1)),
+        _buildDetailChip(Icons.reviews, '${trip.reviewCount} reviews'),
       ],
     );
   }
@@ -440,19 +386,16 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons(TourTrip trip, BuildContext context) {
+  Widget _buildActionButtons(TourPackage trip, BuildContext context) {
     switch (trip.status) {
-      case TripStatus.approved:
+      case PackageStatus.published:
         return Row(
           children: [
             Expanded(
@@ -461,9 +404,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF6366F1),
                   side: const BorderSide(color: Color(0xFF6366F1)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 child: const Text('Manage Tour'),
               ),
@@ -474,17 +414,13 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
                 onPressed: () => _viewBookings(trip),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 child: const Text('View Bookings'),
               ),
             ),
           ],
         );
-      
-      case TripStatus.pending:
+      case PackageStatus.pending_approval:
         return SizedBox(
           width: double.infinity,
           child: OutlinedButton(
@@ -492,26 +428,18 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange,
               side: const BorderSide(color: Colors.orange),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
             child: const Text('View Submission Status'),
           ),
         );
-      
-      case TripStatus.rejected:
+      case PackageStatus.rejected:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Reason: ${trip.rejectionReason ?? "No reason provided"}',
-              style: TextStyle(
-                color: Colors.red.withOpacity(0.8),
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.red, fontSize: 12),
               maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -520,9 +448,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
                 onPressed: () => _resubmitTour(trip),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 child: const Text('Resubmit for Review'),
               ),
@@ -532,116 +457,99 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
     }
   }
 
-  // Filter and Utility Methods
-  List<TourTrip> _filterTrips(List<TourTrip> trips, TripFilter filter) {
-    switch (filter) {
-      case TripFilter.approved:
-        return trips.where((trip) => trip.status == TripStatus.approved).toList();
-      case TripFilter.pending:
-        return trips.where((trip) => trip.status == TripStatus.pending).toList();
-      case TripFilter.rejected:
-        return trips.where((trip) => trip.status == TripStatus.rejected).toList();
-      case TripFilter.all:
-      default:
-        return trips;
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _getEmptyStateIcon(_currentFilter),
+            color: Colors.white54,
+            size: 80,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _getEmptyStateMessage(_currentFilter),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          const SizedBox(height: 20),
+          if (_currentFilter == TripFilter.all)
+            ElevatedButton(
+              onPressed: _createNewTour,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+              ),
+              child: const Text('Create Your First Tour'),
+            ),
+        ],
+      ),
+    );
   }
 
+  // Utility methods
   String _getFilterLabel(TripFilter filter) {
     switch (filter) {
-      case TripFilter.all:
-        return 'All Tours';
-      case TripFilter.approved:
-        return 'Approved';
-      case TripFilter.pending:
-        return 'Pending';
-      case TripFilter.rejected:
-        return 'Rejected';
+      case TripFilter.all: return 'All Tours';
+      case TripFilter.approved: return 'Approved';
+      case TripFilter.pending: return 'Pending';
+      case TripFilter.rejected: return 'Rejected';
     }
   }
 
   Color _getFilterColor(TripFilter filter) {
     switch (filter) {
-      case TripFilter.all:
-        return const Color(0xFF6366F1);
-      case TripFilter.approved:
-        return Colors.green;
-      case TripFilter.pending:
-        return Colors.orange;
-      case TripFilter.rejected:
-        return Colors.red;
+      case TripFilter.all: return const Color(0xFF6366F1);
+      case TripFilter.approved: return Colors.green;
+      case TripFilter.pending: return Colors.orange;
+      case TripFilter.rejected: return Colors.red;
     }
   }
 
-  Color _getStatusColor(TripStatus status) {
+  Color _getStatusColor(PackageStatus status) {
     switch (status) {
-      case TripStatus.approved:
-        return Colors.green;
-      case TripStatus.pending:
-        return Colors.orange;
-      case TripStatus.rejected:
-        return Colors.red;
+      case PackageStatus.published: return Colors.green;
+      case PackageStatus.pending_approval: return Colors.orange;
+      case PackageStatus.rejected: return Colors.red;
     }
   }
 
-  IconData _getStatusIcon(TripStatus status) {
+  IconData _getStatusIcon(PackageStatus status) {
     switch (status) {
-      case TripStatus.approved:
-        return Icons.check_circle;
-      case TripStatus.pending:
-        return Icons.pending;
-      case TripStatus.rejected:
-        return Icons.cancel;
+      case PackageStatus.published: return Icons.check_circle;
+      case PackageStatus.pending_approval: return Icons.pending;
+      case PackageStatus.rejected: return Icons.cancel;
     }
   }
 
-  String _getStatusText(TripStatus status) {
+  String _getStatusText(PackageStatus status) {
     switch (status) {
-      case TripStatus.approved:
-        return 'Approved';
-      case TripStatus.pending:
-        return 'Pending';
-      case TripStatus.rejected:
-        return 'Rejected';
+      case PackageStatus.published: return 'Approved';
+      case PackageStatus.pending_approval: return 'Pending';
+      case PackageStatus.rejected: return 'Rejected';
     }
   }
 
   IconData _getEmptyStateIcon(TripFilter filter) {
     switch (filter) {
-      case TripFilter.all:
-        return Icons.travel_explore_outlined;
-      case TripFilter.approved:
-        return Icons.check_circle_outline;
-      case TripFilter.pending:
-        return Icons.pending_actions;
-      case TripFilter.rejected:
-        return Icons.cancel_outlined;
+      case TripFilter.all: return Icons.travel_explore_outlined;
+      case TripFilter.approved: return Icons.check_circle_outline;
+      case TripFilter.pending: return Icons.pending_actions;
+      case TripFilter.rejected: return Icons.cancel_outlined;
     }
   }
 
   String _getEmptyStateMessage(TripFilter filter) {
     switch (filter) {
-      case TripFilter.all:
-        return 'No tour submissions yet.\nCreate your first tour to get started!';
-      case TripFilter.approved:
-        return 'No approved tours yet.\nYour approved tours will appear here.';
-      case TripFilter.pending:
-        return 'No pending submissions.\nTours under review will appear here.';
-      case TripFilter.rejected:
-        return 'No rejected tours.\nResubmit rejected tours after making changes.';
+      case TripFilter.all: return 'No tour submissions yet.\nCreate your first tour to get started!';
+      case TripFilter.approved: return 'No approved tours yet.\nYour approved tours will appear here.';
+      case TripFilter.pending: return 'No pending submissions.\nTours under review will appear here.';
+      case TripFilter.rejected: return 'No rejected tours.\nResubmit rejected tours after making changes.';
     }
   }
 
-  String _formatDate(String date) {
-    final parts = date.split('-');
-    if (parts.length == 3) {
-      return '${parts[2]}/${parts[1]}/${parts[0]}';
-    }
-    return date;
-  }
-
-  // Action Methods
-  void _manageTour(TourTrip trip) {
+  // Action methods
+  void _manageTour(TourPackage trip) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Managing ${trip.title}'),
@@ -650,7 +558,7 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
     );
   }
 
-  void _viewBookings(TourTrip trip) {
+  void _viewBookings(TourPackage trip) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Viewing bookings for ${trip.title}'),
@@ -659,7 +567,7 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
     );
   }
 
-  void _viewSubmissionStatus(TourTrip trip) {
+  void _viewSubmissionStatus(TourPackage trip) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Checking submission status for ${trip.title}'),
@@ -668,7 +576,7 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
     );
   }
 
-  void _resubmitTour(TourTrip trip) {
+  void _resubmitTour(TourPackage trip) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Resubmitting ${trip.title} for review'),
@@ -687,46 +595,4 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
   }
 }
 
-// Enums and Data Models
-enum TripStatus {
-  approved,
-  pending,
-  rejected,
-}
-
-enum TripFilter {
-  all,
-  approved,
-  pending,
-  rejected,
-}
-
-class TourTrip {
-  final String id;
-  final String title;
-  final String description;
-  final String coverImage;
-  final String date;
-  final String duration;
-  final String price;
-  final int groupSize;
-  final double rating;
-  final TripStatus status;
-  final int bookings;
-  final String? rejectionReason;
-
-  const TourTrip({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.coverImage,
-    required this.date,
-    required this.duration,
-    required this.price,
-    required this.groupSize,
-    required this.rating,
-    required this.status,
-    required this.bookings,
-    this.rejectionReason,
-  });
-}
+enum TripFilter { all, approved, pending, rejected }
