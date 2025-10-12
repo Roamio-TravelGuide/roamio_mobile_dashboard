@@ -69,20 +69,21 @@ class TourPackageApi {
       }
 
       // Call backend to get guide ID from user ID
-      final response = await apiClient.get('/users/guide/$userId');
+      // final response = await apiClient.get('/users/guide/$userId');
       
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
+      // if (response.statusCode == 200) {
+      //   final responseData = json.decode(response.body);
         
-        if (responseData['success'] == true) {
-          final guideId = responseData['data']['guideId'];
-          return guideId;
-        } else {
-          throw Exception(responseData['message'] ?? 'Failed to get guide ID');
-        }
-      } else {
-        throw Exception('API error: ${response.statusCode}');
-      }
+        // if (responseData['success'] == true) {
+        //   final guideId = responseData['data']['guideId'];
+        //   return guideId;
+        // } else {
+        //   throw Exception(responseData['message'] ?? 'Failed to get guide ID');
+        // }
+      // } else {
+      //   throw Exception('API error: ${response.statusCode}');
+      // }
+      return userId;
     } catch (error) {
       print('Error getting guide ID: $error');
       rethrow;

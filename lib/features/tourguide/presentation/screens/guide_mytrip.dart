@@ -83,11 +83,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
           Expanded(child: _buildContent()),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _createNewTour,
-        backgroundColor: const Color(0xFF6366F1),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -473,15 +468,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
-          const SizedBox(height: 20),
-          if (_currentFilter == TripFilter.all)
-            ElevatedButton(
-              onPressed: _createNewTour,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-              ),
-              child: const Text('Create Your First Tour'),
-            ),
         ],
       ),
     );
@@ -581,15 +567,6 @@ class _GuideMyTripsScreenState extends State<GuideMyTripsScreen> {
       SnackBar(
         content: Text('Resubmitting ${trip.title} for review'),
         backgroundColor: const Color(0xFF6366F1),
-      ),
-    );
-  }
-
-  void _createNewTour() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Creating new tour'),
-        backgroundColor: Color(0xFF6366F1),
       ),
     );
   }

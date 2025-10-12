@@ -87,7 +87,7 @@ class TourPackage {
 
   int get durationDays => (durationMinutes / (60 * 24)).ceil();
 
-  String get priceFormatted => '\$${price.toStringAsFixed(2)}';
+  String get priceFormatted => 'LKR ${price.toStringAsFixed(2)}';
 
   String get formattedDate => DateFormat('MMM dd, yyyy').format(createdAt);
 

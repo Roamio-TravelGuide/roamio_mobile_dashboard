@@ -27,53 +27,88 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // Home
-          _NavItem(
-            icon: Icons.home_outlined,
-            label: 'Home',
-            isActive: currentIndex == AppRoutes.homeTab,
-            onTap: () => _navigateToHome(context),
-          ),
-          
-          // My Trips
-          _NavItem(
-            icon: Icons.location_on,
-            label: 'My Trip',
-            isActive: currentIndex == AppRoutes.myTripsTab,
-            onTap: () => _navigateToMyTrips(context),
-          ),
-          
-          // Add button for BOTH travelers and guides
-          _AddButton(
-            onTap: () => _navigateToAddHiddenPage(context),
-          ),
-          
-          // Favorites for traveler, Earnings for guide
-          isGuide
-            ? _NavItem(
-                icon: Icons.attach_money,
-                label: 'Earnings',
-                isActive: currentIndex == AppRoutes.earningsTab,
-                onTap: () => _navigateToEarnings(context),
-              )
-            : _NavItem(
-                icon: Icons.favorite_outline,
-                label: 'Favorite',
-                isActive: currentIndex == AppRoutes.favoritesTab,
-                onTap: () => _navigateToFavorites(context),
-              ),
-          
-          // Profile
-          _NavItem(
-            icon: Icons.person_outline,
-            label: 'Profile',
-            isActive: currentIndex == AppRoutes.profileTab,
-            onTap: () => _navigateToProfile(context),
-          ),
-        ],
+        children: _buildNavigationItems(isGuide, context),
       ),
     );
+  }
+
+  List<Widget> _buildNavigationItems(bool isGuide, BuildContext context) {
+    if (isGuide) {
+      // Guide navigation - 4 items without add button
+      return [
+        // Home
+        _NavItem(
+          icon: Icons.home_outlined,
+          label: 'Home',
+          isActive: currentIndex == AppRoutes.homeTab,
+          onTap: () => _navigateToHome(context),
+        ),
+        
+        // My Trips
+        _NavItem(
+          icon: Icons.location_on,
+          label: 'My Trip',
+          isActive: currentIndex == AppRoutes.myTripsTab,
+          onTap: () => _navigateToMyTrips(context),
+        ),
+        
+        // Earnings
+        _NavItem(
+          icon: Icons.attach_money,
+          label: 'Earnings',
+          isActive: currentIndex == AppRoutes.earningsTab,
+          onTap: () => _navigateToEarnings(context),
+        ),
+        
+        // Profile
+        _NavItem(
+          icon: Icons.person_outline,
+          label: 'Profile',
+          isActive: currentIndex == AppRoutes.profileTab,
+          onTap: () => _navigateToProfile(context),
+        ),
+      ];
+    } else {
+      // Traveler navigation - 5 items with add button in middle
+      return [
+        // Home
+        _NavItem(
+          icon: Icons.home_outlined,
+          label: 'Home',
+          isActive: currentIndex == AppRoutes.homeTab,
+          onTap: () => _navigateToHome(context),
+        ),
+        
+        // My Trips
+        _NavItem(
+          icon: Icons.location_on,
+          label: 'My Trip',
+          isActive: currentIndex == AppRoutes.myTripsTab,
+          onTap: () => _navigateToMyTrips(context),
+        ),
+        
+        // Add button - ONLY for travelers
+        _AddButton(
+          onTap: () => _navigateToAddHiddenPage(context),
+        ),
+        
+        // Favorites
+        _NavItem(
+          icon: Icons.favorite_outline,
+          label: 'Favorite',
+          isActive: currentIndex == AppRoutes.favoritesTab,
+          onTap: () => _navigateToFavorites(context),
+        ),
+        
+        // Profile
+        _NavItem(
+          icon: Icons.person_outline,
+          label: 'Profile',
+          isActive: currentIndex == AppRoutes.profileTab,
+          onTap: () => _navigateToProfile(context),
+        ),
+      ];
+    }
   }
 
   void _navigateToHome(BuildContext context) {
@@ -109,13 +144,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
   }
 
   void _navigateToAddHiddenPage(BuildContext context) {
-    if (userRole == 'travel_guide') {
-      final route = '${AppRoutes.guide}/${AppRoutes.addHiddenPage}';
-      context.go(route);
-    } else {
-      final route = '${AppRoutes.traveler}/${AppRoutes.addHiddenPage}';
-      context.go(route);
-    }
+    // This is only for travelers now
+    context.go('${AppRoutes.traveler}/${AppRoutes.addHiddenPage}');
   }
 }
 
