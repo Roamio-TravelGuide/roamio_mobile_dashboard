@@ -299,28 +299,22 @@ class AuthApi {
     try {
       // Clear local storage first to ensure user can always logout
       await AuthApi.clearAuthData();
-      print('✅ Local auth data cleared');
       
       // Clear the token in the API client
       apiClient.clearToken();
-      print('✅ API client token cleared');
 
       try {
         // Try to call backend logout endpoint
-        print('📡 Attempting GET /auth/logout');
         final response = await apiClient.get('/auth/logout');
         
-        print('📡 Response status code: ${response.statusCode}');
         
         // Try to parse JSON response if available
         Map<String, dynamic>? responseData;
         if (response.body.trim().isNotEmpty) {
           try {
             responseData = json.decode(response.body);
-            print('✅ Successfully parsed JSON response');
           } catch (e) {
             // Ignore JSON parsing errors since we've already logged out locally
-            print('⚠️ Non-JSON response from backend');
           }
         }
 
@@ -332,7 +326,6 @@ class AuthApi {
         };
       } catch (backendError) {
         // If backend call fails, still return success since we've cleared local storage
-        print('⚠️ Backend logout failed: $backendError');
         return {
           'success': true,
           'statusCode': 200,
@@ -341,7 +334,6 @@ class AuthApi {
         };
       }
     } catch (error) {
-      print('⚠️ Error during logout: $error');
       
       // Try one last time to clear tokens even if previous attempts failed
       try {
