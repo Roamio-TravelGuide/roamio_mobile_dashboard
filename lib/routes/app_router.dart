@@ -14,9 +14,11 @@ import '../features/Landing/presentation/screens/select_user.dart';
 import '../features/tourguide/presentation/screens/guide_landing.dart';
 import '../features/tourguide/presentation/screens/earnings.dart';
 import '../features/tourguide/presentation/screens/profile.dart';
+import '../features/tourguide/presentation/screens/guide_mytrip.dart'; 
 
 import '../features/traveller/presentation/screens/home_page.dart';
 import '../features/traveller/presentation/screens/mytrip.dart';
+import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
 import '../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../features/traveller/presentation/screens/profile_screen.dart';
 import '../core/widgets/bottom_navigation.dart';
@@ -47,7 +49,7 @@ class AppRoutes {
   static const String travelerProfile = 'profile';
   
   // Common routes
-  static const String addHiddenPage = '/addHiddenPage';
+  static const String addHiddenPage = 'addHiddenPage';
   
   // Bottom navigation indices
   static const int homeTab = 0;
@@ -88,12 +90,6 @@ final GoRouter appRouter = GoRouter(
       builder: (_, __) => const SelectUserScreen(),
     ),
     
-    // Add Hidden Page (common for both roles)
-    GoRoute(
-      path: AppRoutes.addHiddenPage,
-      builder: (_, __) => const AddHiddenPage(),
-    ),
-    
     // Tour Guide tabbed navigation
     ShellRoute(
       builder: (context, state, child) {
@@ -113,20 +109,21 @@ final GoRouter appRouter = GoRouter(
         );
       },
       routes: [
-        // Guide home is the default route
         GoRoute(
-          path: '${AppRoutes.guide}/:tab(${AppRoutes.guideHome}|${AppRoutes.guideMyTrips}|${AppRoutes.guideEarnings}|${AppRoutes.guideProfile})',
+          path: '${AppRoutes.guide}/:tab',
           builder: (context, state) {
             final tab = state.pathParameters['tab'] ?? AppRoutes.guideHome;
             switch (tab) {
               case AppRoutes.guideHome:
                 return const GuideLandingScreen();
               case AppRoutes.guideMyTrips:
-                return const MyTripScreen();
+                return const GuideMyTripsScreen(); // Updated to use renamed class
               case AppRoutes.guideEarnings:
                 return const EarningsScreen();
               case AppRoutes.guideProfile:
                 return const GuideProfilePage();
+              case AppRoutes.addHiddenPage:
+                return const AddHiddenPage();
               default:
                 return const GuideLandingScreen();
             }
@@ -154,20 +151,21 @@ final GoRouter appRouter = GoRouter(
         );
       },
       routes: [
-        // Traveler home is the default route
         GoRoute(
-          path: '${AppRoutes.traveler}/:tab(${AppRoutes.travelerHome}|${AppRoutes.travelerMyTrips}|${AppRoutes.travelerFavorites}|${AppRoutes.travelerProfile})',
+          path: '${AppRoutes.traveler}/:tab',
           builder: (context, state) {
             final tab = state.pathParameters['tab'] ?? AppRoutes.travelerHome;
             switch (tab) {
               case AppRoutes.travelerHome:
                 return const HomePage();
               case AppRoutes.travelerMyTrips:
-                return const MyTripScreen();
+                return const MyTrips(); // Keep original traveler class
               case AppRoutes.travelerFavorites:
                 return const FavoritesScreen();
               case AppRoutes.travelerProfile:
                 return const TravelerProfilePage();
+              case AppRoutes.addHiddenPage:
+                return const AddHiddenPage();
               default:
                 return const HomePage();
             }
@@ -218,6 +216,7 @@ int _getTravelerCurrentIndex(String path) {
   if (path.contains(AppRoutes.travelerMyTrips)) return AppRoutes.myTripsTab;
   if (path.contains(AppRoutes.travelerFavorites)) return AppRoutes.favoritesTab;
   if (path.contains(AppRoutes.travelerProfile)) return AppRoutes.profileTab;
+  if (path.contains(AppRoutes.addHiddenPage)) return -1;
   return AppRoutes.homeTab;
 }
 
@@ -226,6 +225,7 @@ int _getGuideCurrentIndex(String path) {
   if (path.contains(AppRoutes.guideMyTrips)) return AppRoutes.myTripsTab;
   if (path.contains(AppRoutes.guideEarnings)) return AppRoutes.earningsTab;
   if (path.contains(AppRoutes.guideProfile)) return AppRoutes.profileTab;
+  if (path.contains(AppRoutes.addHiddenPage)) return -1;
   return AppRoutes.homeTab;
 }
 
