@@ -121,7 +121,7 @@ final GoRouter appRouter = GoRouter(
               case AppRoutes.guideEarnings:
                 return const EarningsScreen();
               case AppRoutes.guideProfile:
-                return const GuideProfilePage();
+                return const TravelGuideProfilePage();
               case AppRoutes.addHiddenPage:
                 return const AddHiddenPage();
               default:
