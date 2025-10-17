@@ -51,6 +51,13 @@ class _MyTripScreenState extends State<MyTripScreen> {
   bool isLoadingPois = false;
   bool isLoadingDirections = false;
 
+  // No dummy reviews data needed since we're only showing the add review UI
+
+  // State for adding new review
+  int _selectedRating = 0;
+  final TextEditingController _reviewController = TextEditingController();
+  bool _isAddingReview = false;
+
   @override
   void initState() {
     super.initState();
@@ -441,6 +448,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   void dispose() {
     audioPlayer.dispose();
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -472,22 +480,17 @@ class _MyTripScreenState extends State<MyTripScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDestinationHeader(),
-                  _buildMapSection(),
-                ],
-              ),
-            ),
-          ),
-          _buildAudioPlayer(),
-          _buildRestaurantsSection(),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDestinationHeader(),
+            _buildMapSection(),
+            _buildAudioPlayer(),
+            if (hasPurchased) _buildReviewsSection(),
+            _buildRestaurantsSection(),
+          ],
+        ),
       ),
     );
   }
@@ -578,6 +581,95 @@ class _MyTripScreenState extends State<MyTripScreen> {
         media: mediaList,
       );
     }).toList();
+  }
+
+  Widget _buildReviewsSection() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Write a Review',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Rate this tour',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(
+              5,
+              (index) => GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedRating = index + 1;
+                  });
+                },
+                child: Icon(
+                  index < _selectedRating ? Icons.star : Icons.star_border,
+                  color: Colors.blue,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _reviewController,
+            maxLines: 3,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Write your review...',
+              hintStyle: const TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: const Color(0xFF2A2A2A),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submitReview,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Submit Review',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRestaurantsSection() {
@@ -718,6 +810,42 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
   void _stopAudio() {
     audioPlayer.stop();
+  }
+
+  void _submitReview() {
+    if (_selectedRating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a rating'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_reviewController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please write a review'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // In a real app, this would send the review to the backend
+    // For now, just show success message and reset the form
+    setState(() {
+      _selectedRating = 0;
+      _reviewController.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Review submitted successfully!'),
+        backgroundColor: Color(0xFF40C4AA),
+      ),
+    );
   }
 
   LatLng? _calculateMapCenter() {
