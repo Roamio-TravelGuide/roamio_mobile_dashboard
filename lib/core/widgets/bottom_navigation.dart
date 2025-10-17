@@ -92,10 +92,10 @@ class CustomBottomNavigationBar extends StatelessWidget {
           onTap: () => _navigateToAddHiddenPage(context),
         ),
         
-        // Favorites
+        // Finds
         _NavItem(
-          icon: Icons.favorite_outline,
-          label: 'Favorite',
+          icon: Icons.search,
+          label: 'Finds',
           isActive: currentIndex == AppRoutes.favoritesTab,
           onTap: () => _navigateToFavorites(context),
         ),

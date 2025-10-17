@@ -21,6 +21,7 @@ import '../features/traveller/presentation/screens/mytrip.dart';
 import '../features/traveller/presentation/screens/mytrip_bottomnavigationbar.dart';
 import '../features/traveller/presentation/screens/add_hidden_page.dart';
 import '../features/traveller/presentation/screens/profile_screen.dart';
+import '../features/traveller/presentation/screens/favorites_screen.dart';
 import '../core/widgets/bottom_navigation.dart';
 
 class AppRoutes {
@@ -229,14 +230,4 @@ int _getGuideCurrentIndex(String path) {
   return AppRoutes.homeTab;
 }
 
-// Placeholder screen for favorites
-class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Favorites Screen')),
-    );
-  }
-}
+// FavoritesScreen is now implemented in favorites_screen.dart
