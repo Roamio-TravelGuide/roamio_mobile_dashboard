@@ -6,6 +6,12 @@ import 'audioplayer.dart';
 import 'gallery_page.dart';
 import 'mytrip.dart'; // Added import for MyTripScreen
 import '../../../../core/services/mapbox_service.dart';
+import '../../../../core/services/media_service.dart';
+import '../../../../core/widgets/audio_player_widget.dart';
+import '../../api/dashboard_api.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/config/env_config.dart';
+import '../../../../core/utils/storage_helper.dart';
 
 
 void main() {
@@ -56,6 +62,12 @@ class TravelApp extends StatelessWidget {
           },
           'media': [
             {
+              'media_type': 'image',
+              'media': {
+                'url': '/uploads/media/sample_image1.jpg'
+              }
+            },
+            {
               'media_type': 'audio',
               'media': {
                 'url': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
@@ -75,6 +87,12 @@ class TravelApp extends StatelessWidget {
             'district': 'Colombo'
           },
           'media': [
+            {
+              'media_type': 'image',
+              'media': {
+                'url': '/uploads/media/sample_image2.jpg'
+              }
+            },
             {
               'media_type': 'audio',
               'media': {
@@ -96,6 +114,12 @@ class TravelApp extends StatelessWidget {
           },
           'media': [
             {
+              'media_type': 'image',
+              'media': {
+                'url': '/uploads/media/sample_image3.jpg'
+              }
+            },
+            {
               'media_type': 'audio',
               'media': {
                 'url': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
@@ -111,8 +135,9 @@ class TravelApp extends StatelessWidget {
 
 class DestinationDetailsPage extends StatefulWidget {
   final Map<String, dynamic>? package;
+  final bool? isFromMyTrips;
 
-  const DestinationDetailsPage({super.key, this.package});
+  const DestinationDetailsPage({super.key, this.package, this.isFromMyTrips});
 
   @override
   State<DestinationDetailsPage> createState() => _DestinationDetailsPageState();
@@ -127,6 +152,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     double? distanceToFirstStop;
     double? totalDistance;
     final MapboxService _mapboxService = MapboxService();
+    late DashboardApi dashboardApi;
+    bool? hasPurchased;
 
   List<Map<String, dynamic>> get stopTitles {
     if (widget.package?['tour_stops'] != null) {
@@ -138,6 +165,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   @override
   void initState() {
     super.initState();
+    dashboardApi = DashboardApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
     audioPlayer = AudioPlayer();
     // Listen to player state changes
     audioPlayer!.playerStateStream.listen((state) {
@@ -161,6 +189,43 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     });
     _calculateDistanceToFirstStop();
     _calculateTotalDistance();
+    _checkPurchaseStatus();
+    // For testing: force unpaid status
+    // _forceUnpaidForTesting();
+  }
+
+  Future<void> _checkPurchaseStatus() async {
+    // If coming from My Trips, assume the package is already paid for
+    if (widget.isFromMyTrips == true) {
+      print('PackageDetails: Coming from My Trips - assuming package is paid for');
+      setState(() {
+        hasPurchased = true;
+      });
+      return;
+    }
+
+    try {
+      final purchased = await _hasUserPurchasedPackage();
+      print('PackageDetails: Payment status check result: $purchased for package ${widget.package?['id']}');
+      print('PackageDetails: Setting hasPurchased to: $purchased');
+      setState(() {
+        hasPurchased = purchased;
+      });
+      print('PackageDetails: hasPurchased state is now: $hasPurchased');
+    } catch (e) {
+      print('PackageDetails: Error checking purchase status: $e');
+      setState(() {
+        hasPurchased = false;
+      });
+    }
+  }
+
+  // Force set hasPurchased to false for testing
+  void _forceUnpaidForTesting() {
+    setState(() {
+      hasPurchased = false;
+    });
+    print('PackageDetails: Forced hasPurchased to false for testing');
   }
 
   void onSeek(double value) {
@@ -209,7 +274,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                     fit: StackFit.expand,
                     children: [
                       Image.network(
-                        heroImage,
+                        MediaService.getFullUrl(heroImage),
                         fit: BoxFit.cover,
                         alignment: Alignment.topCenter,
                         cacheWidth: 800,
@@ -252,6 +317,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                             ),
                             const SizedBox(width: 8),
                             _CircleIconButton(icon: Icons.ios_share, onTap: () {}),
+                            const SizedBox(width: 8),
+                            _CircleIconButton(icon: Icons.warning, onTap: _testDialog),
                           ],
                         ),
                       ),
@@ -273,7 +340,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       child: Builder(
                         builder: (context) {
                           print('Building UI with distanceToFirstStop: $distanceToFirstStop');
-                          return _EllaDetailsSection(package: widget.package, getPackageLocation: _getPackageLocation, distanceToFirstStop: distanceToFirstStop, allStops: stopTitles, totalDistance: totalDistance);
+                          print('PackageDetails: Building UI with hasPurchased: $hasPurchased');
+                          return _EllaDetailsSection(package: widget.package, getPackageLocation: _getPackageLocation, distanceToFirstStop: distanceToFirstStop, allStops: stopTitles, totalDistance: totalDistance, hasPurchased: hasPurchased ?? false);
                         },
                       ),
                     ),
@@ -284,15 +352,35 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       title: 'Gallery',
                       actionLabel: 'See All',
                       onAction: () {
-                        // Create gallery data with stop names and images
-                        final galleryItems = stopTitles.map((stop) {
+                        // Create gallery data with stop names and images - limit based on payment status
+                        print('Gallery: Creating gallery items for ${stopTitles.length} stops, hasPurchased: $hasPurchased');
+                        final availableStops = hasPurchased ?? false ? stopTitles : stopTitles.take(2).toList();
+                        final galleryItems = availableStops.map((stop) {
+                          print('Gallery: Processing stop for gallery: ${stop['stop_name']}');
+
+                          String imageUrl = 'https://via.placeholder.com/400x250.png?text=No+Image';
+
+                          // Check if this stop has media data
+                          if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
+                            print('Gallery: Stop has media for gallery: ${stop['media']}');
+                            // Find image media
+                            final imageMedia = (stop['media'] as List).firstWhere(
+                              (media) => media['media_type'] == 'image',
+                              orElse: () => null,
+                            );
+                            if (imageMedia != null) {
+                              // The media is directly in the imageMedia object, not nested under 'media'
+                              final url = imageMedia['url'];
+                              print('Gallery: Found image URL for gallery: $url');
+                              if (url != null && url.isNotEmpty) {
+                                imageUrl = MediaService.getFullUrl(url);
+                                print('Gallery: Full image URL for gallery: $imageUrl');
+                              }
+                            }
+                          }
+
                           return {
-                            'image': stop['media'] != null && (stop['media'] as List).isNotEmpty
-                                ? (stop['media'] as List).firstWhere(
-                                    (media) => media['media_type'] == 'image',
-                                    orElse: () => {'media': {'url': 'https://via.placeholder.com/400x250.png?text=No+Image'}}
-                                  )['media']['url']
-                                : 'https://via.placeholder.com/400x250.png?text=No+Image',
+                            'image': imageUrl,
                             'title': stop['stop_name'] ?? 'Stop'
                           };
                         }).toList();
@@ -313,23 +401,41 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: stopTitles.length,
+                        itemCount: (hasPurchased ?? false) ? stopTitles.length : stopTitles.take(2).toList().length,
                         separatorBuilder: (_, __) => const SizedBox(width: 10),
                         itemBuilder: (context, index) {
                           final stop = stopTitles[index];
-                          final imageUrl = stop['media'] != null && (stop['media'] as List).isNotEmpty
-                              ? (stop['media'] as List).firstWhere(
-                                  (media) => media['media_type'] == 'image',
-                                  orElse: () => {'media': {'url': 'https://via.placeholder.com/400x250.png?text=No+Image'}}
-                                )['media']['url']
-                              : 'https://via.placeholder.com/400x250.png?text=No+Image';
-                          return _GalleryThumb(url: imageUrl);
+                          print('Gallery: Processing stop ${index}: ${stop['stop_name']}');
+
+                          // Check if this stop has media data
+                          if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
+                            print('Gallery: Stop has media: ${stop['media']}');
+                            // Find image media
+                            final imageMedia = (stop['media'] as List).firstWhere(
+                              (media) => media['media_type'] == 'image',
+                              orElse: () => null,
+                            );
+                            if (imageMedia != null) {
+                              // The media is directly in the imageMedia object, not nested under 'media'
+                              final url = imageMedia['url'];
+                              print('Gallery: Found image URL: $url');
+                              if (url != null && url.isNotEmpty) {
+                                final fullUrl = MediaService.getFullUrl(url);
+                                print('Gallery: Full image URL: $fullUrl');
+                                return _GalleryThumb(url: fullUrl);
+                              }
+                            }
+                          }
+
+                          // Fallback to placeholder
+                          print('Gallery: No image found, using placeholder');
+                          return _GalleryThumb(url: 'https://via.placeholder.com/400x250.png?text=No+Image');
                         },
                       ),
                     ),
-
+    
                     const SizedBox(height: 20),
-
+    
                     // Trip to Ella section
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -342,28 +448,36 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
+    
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         children: List.generate(stopTitles.length, (index) {
-                          final stop = stopTitles[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _AudioCard(
-                              title: stop['stop_name'] ?? 'Stop ${index + 1}',
-                              description: stop['description'] ?? 'No description available.',
-                              image: 'https://via.placeholder.com/400x250.png?text=Stop+${index + 1}',
-                              index: index,
-                              onPlayAudio: () => _onPlayAudio(index),
-                              onShowDirections: () => _onShowDirections(index),
-                              isCurrentlyPlaying:
-                                  currentPlayingIndex == index && isPlaying,
-                            ),
-                          );
-                        }),
+                           final stop = stopTitles[index];
+                           // Limit to first 2 stops only for unpaid users
+                           final isPreviewLimited = !(hasPurchased ?? false) && index > 1;
+                           // Show preview badge for unpaid users on the first 2 stops
+                           final showPreviewBadge = (hasPurchased == null || hasPurchased == false) && index <= 1;
+
+                           return Padding(
+                             padding: const EdgeInsets.only(bottom: 10),
+                             child: _AudioCard(
+                               title: stop['stop_name'] ?? 'Stop ${index + 1}',
+                               description: stop['description'] ?? 'No description available.',
+                               image: 'https://via.placeholder.com/400x250.png?text=Stop+${index + 1}',
+                               index: index,
+                               onPlayAudio: () => _onPlayAudio(index),
+                               onShowDirections: () => _onShowDirections(index),
+                               isCurrentlyPlaying: currentPlayingIndex == index && isPlaying,
+                               isPreviewLimited: isPreviewLimited,
+                               showPreviewBadge: showPreviewBadge,
+                             ),
+                           );
+                         }),
                       ),
                     ),
+                    // Add extra space for bottom player
+                    if (currentPlayingIndex != null) const SizedBox(height: 120),
                   ]),
                 ),
               ),
@@ -371,73 +485,125 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
           ),
 
           // Fixed bottom audio player overlay
-          if (currentPlayingIndex != null)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder<double>(
-                valueListenable: currentPositionNotifier,
-                builder: (context, positionValue, child) {
-                  return ValueListenableBuilder<double>(
-                    valueListenable: totalDurationNotifier,
-                    builder: (context, durationValue, child) {
-                      final currentStop = stopTitles[currentPlayingIndex!];
+          if (currentPlayingIndex != null) ...[
+            () {
+              final currentStop = stopTitles[currentPlayingIndex!];
+              final mediaList = currentStop['media'] as List?;
+              final audioMedia = mediaList?.firstWhere(
+                (media) => media['media_type'] == 'audio',
+                orElse: () => null,
+              );
 
-                      return BottomAudioPlayer(
-                        title: currentStop['stop_name'] ?? 'Stop ${currentPlayingIndex! + 1}',
-                        onPlayPause: () {
-                          if (audioPlayer!.playing) {
-                            // When pausing, stop and hide the player
-                            setState(() {
-                              isPlaying = false;
-                              currentPositionNotifier.value = 0.0;
-                              currentPlayingIndex = null;
-                            });
-                            audioPlayer?.stop();
-                          } else {
-                            audioPlayer?.play();
-                          }
-                        },
-                        onStop: () {
-                          setState(() {
-                            isPlaying = false;
-                            currentPositionNotifier.value = 0.0;
-                            currentPlayingIndex = null;
-                          });
-                          audioPlayer?.stop();
-                        },
-                        onNext: () => _changeStop(currentPlayingIndex! + 1),
-                        onPrevious: () => _changeStop(currentPlayingIndex! - 1),
-                        onSeek: (position) {
-                          audioPlayer?.seek(Duration(seconds: position.toInt()));
-                        },
-                        isPlaying: isPlaying,
-                        currentPositionNotifier: currentPositionNotifier,
-                        totalDuration: durationValue,
-                        progressText: '${_formatTime(positionValue)} / ${_formatTime(durationValue)}',
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+              // Always show the player overlay for the current playing stop
+              return Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1E1E2E),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentStop['stop_name'] ?? 'Current Stop',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Navigation buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Previous stop button
+                            IconButton(
+                              onPressed: currentPlayingIndex! > 0 ? () {
+                                print('PackageDetails: Previous button pressed, changing to stop ${currentPlayingIndex! - 1}');
+                                _changeStop(currentPlayingIndex! - 1);
+                              } : null,
+                              icon: const Icon(Icons.skip_previous, color: Colors.white, size: 28),
+                              tooltip: 'Previous Stop',
+                            ),
+                            const SizedBox(width: 16),
+                            // Current audio player
+                                Expanded(
+                                  child: AudioPlayerWidget(
+                                    audioUrl: _getAudioUrlForStop(currentStop),
+                                    title: 'Play Audio for ${currentStop['stop_name'] ?? 'Current Stop'}',
+                                  ),
+                                ),
+                            const SizedBox(width: 16),
+                            // Next stop button
+                            IconButton(
+                              onPressed: currentPlayingIndex! < stopTitles.length - 1 ? () {
+                                print('PackageDetails: Next button pressed, changing to stop ${currentPlayingIndex! + 1}');
+                                _onNextStop();
+                              } : null,
+                              icon: const Icon(Icons.skip_next, color: Colors.white, size: 28),
+                              tooltip: 'Next Stop',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }(),
+          ]
         ],
       ),
     );
   }
 
   void _onPlayAudio(int index) {
-    // Since this package is already purchased (from my trips), allow all stops
-    setState(() {
-      if (currentPlayingIndex == index && isPlaying) {
-        isPlaying = false;
-      } else {
-        currentPlayingIndex = index;
-        isPlaying = true;
-      }
-    });
-    _loadCurrentAudio();
+     print('PackageDetails: _onPlayAudio called with index: $index, hasPurchased: $hasPurchased, isFromMyTrips: ${widget.isFromMyTrips}');
+     // Check if user has purchased this package using state
+     if ((hasPurchased == null || hasPurchased == false) && index > 1) {
+       print('PackageDetails: Showing preview dialog for unpaid user on stop index: $index');
+       // Show preview dialog for stops beyond the first 2
+       _showBuyTourDialog(context, widget.package);
+       return;
+     }
+
+     print('PackageDetails: Allowing audio play for index: $index');
+     // Allow playing for purchased packages or first 2 stops for preview
+     setState(() {
+       if (currentPlayingIndex == index && isPlaying) {
+         isPlaying = false;
+       } else {
+         currentPlayingIndex = index;
+         isPlaying = true;
+       }
+     });
+     _loadCurrentAudio();
+   }
+
+  void _onNextStop() {
+    print('PackageDetails: Next button pressed');
+    if (currentPlayingIndex != null && currentPlayingIndex! < stopTitles.length - 1) {
+      int nextIndex = currentPlayingIndex! + 1;
+      print('PackageDetails: Attempting to go to next stop index: $nextIndex');
+      _onPlayAudio(nextIndex);
+    }
+  }
+
+  // Test function to show dialog
+  void _testDialog() {
+    print('PackageDetails: Testing dialog');
+    _showBuyTourDialog(context, widget.package);
   }
 
   void _loadCurrentAudio() async {
@@ -453,7 +619,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
           (media) => media['media_type'] == 'audio',
           orElse: () => null,
         );
-        if (audioMedia != null) {
+        if (audioMedia != null && audioMedia['media'] != null) {
           audioUrl = audioMedia['media']['url'] ?? 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
           // Try to get duration from database (stored in seconds)
           if (audioMedia['media']['duration_seconds'] != null) {
@@ -495,6 +661,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
 
   void _changeStop(int newIndex) {
     if (newIndex >= 0 && newIndex < stopTitles.length) {
+      print('PackageDetails: Changing to stop index: $newIndex');
       setState(() {
         currentPlayingIndex = newIndex;
         isPlaying = true;
@@ -505,14 +672,29 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   void _onShowDirections(int index) {
-    final stop = stopTitles[index];
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MyTripScreen(stop: stop, allStops: stopTitles),
-      ),
-    );
-  }
+     print('PackageDetails: Show directions clicked for stop index: $index, navigating to MyTripScreen with same functionality as View Tour');
+
+     // Check if user has purchased this package using state
+     if ((hasPurchased == null || hasPurchased == false) && index > 1) {
+       print('PackageDetails: Showing preview dialog for unpaid user on directions for stop index: $index');
+       // Show preview dialog for stops beyond the first 2
+       _showBuyTourDialog(context, widget.package);
+       return;
+     }
+
+     print('PackageDetails: Allowing directions navigation for index: $index');
+     // Navigate to MyTripScreen with the same functionality as "View Tour" button
+     // Pass the first stop and all stops to provide full tour functionality
+     // Pass isPreviewMode: true for unpaid users to limit to first 2 stops
+     final firstStop = stopTitles.isNotEmpty ? stopTitles[0] : null;
+     final isPreviewMode = (hasPurchased == null || hasPurchased == false);
+     Navigator.push(
+       context,
+       MaterialPageRoute(
+         builder: (context) => MyTripScreen(stop: firstStop, allStops: stopTitles, package: widget.package, isPreviewMode: isPreviewMode),
+       ),
+     );
+   }
 
   String _formatTime(double seconds) {
     final int mins = seconds ~/ 60;
@@ -523,10 +705,18 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   String _getPackageLocation(Map<String, dynamic>? package) {
     if (package != null && package['tour_stops'] != null && package['tour_stops'] is List && package['tour_stops'].isNotEmpty) {
       final firstStop = package['tour_stops'][0];
-      if (firstStop['location'] != null && firstStop['location']['district'] != null) {
-        return firstStop['location']['district'];
+      if (firstStop['location'] != null && firstStop['location']['city'] != null) {
+        final city = firstStop['location']['city'];
+        print('PackageDetails: Found city from location table: $city');
+        return city;
       }
     }
+    // Fallback to package-level location if available
+    if (package != null && package['location'] != null) {
+      print('PackageDetails: Using package-level location: ${package['location']}');
+      return package['location'].toString();
+    }
+    print('PackageDetails: No location found, returning default');
     return 'Location TBD';
   }
 
@@ -649,12 +839,119 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
       print('Error calculating total distance: $e');
     }
   }
+
+  Future<bool> _hasUserPurchasedPackage() async {
+    try {
+      // Get the package ID
+      final packageId = widget.package?['id']?.toString();
+      if (packageId == null) {
+        print('PackageDetails: No package ID found');
+        return false;
+      }
+
+      // Get user ID from storage (assuming we have a way to get current user)
+      final userId = await _getCurrentUserId();
+      if (userId == null) {
+        print('PackageDetails: No user ID found');
+        return false;
+      }
+
+      print('PackageDetails: Checking payment status for package ID: $packageId, user ID: $userId');
+
+      // Check payment status via API
+      final response = await dashboardApi.checkPaymentStatus(packageId, userId);
+      print('PackageDetails: Payment status API response: $response');
+
+      if (response['success'] == true) {
+        final hasPaid = response['data']?['hasPaid'] ?? false;
+        print('PackageDetails: hasPaid value from API: $hasPaid');
+        return hasPaid;
+      }
+      print('PackageDetails: API response not successful');
+      return false;
+    } catch (e) {
+      print('PackageDetails: Error checking payment status: $e');
+      return false; // Default to preview mode on error
+    }
+  }
+
+  Future<String?> _getCurrentUserId() async {
+    try {
+      // Get user ID from secure storage
+      return await StorageHelper.getUserId();
+    } catch (e) {
+      print('PackageDetails: Error getting current user ID: $e');
+      return null;
+    }
+  }
+
+  String _getAudioUrlForStop(Map<String, dynamic> stop) {
+    print('PackageDetails: Getting audio URL for stop: ${stop['stop_name']}');
+    print('PackageDetails: Full stop data keys: ${stop.keys.toList()}');
+
+    // Debug: Print all fields that might contain audio
+    print('PackageDetails: audio_url field: ${stop['audio_url']}');
+    print('PackageDetails: audioUrl field: ${stop['audioUrl']}');
+    print('PackageDetails: media field: ${stop['media']}');
+
+    // Check if this stop has media data
+    if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
+      print('PackageDetails: Stop has media data: ${stop['media']}');
+      // Find audio media
+      final audioMedia = (stop['media'] as List).firstWhere(
+        (media) => media['media_type'] == 'audio',
+        orElse: () => null,
+      );
+      if (audioMedia != null) {
+        print('PackageDetails: Found audio media object: $audioMedia');
+        // The media is directly in the audioMedia object, not nested under 'media'
+        final url = audioMedia['url'];
+        print('PackageDetails: Found audio media URL: $url');
+        if (url != null && url.isNotEmpty) {
+          final fullUrl = MediaService.getFullUrl(url);
+          print('PackageDetails: Full audio URL: $fullUrl');
+          return fullUrl;
+        }
+      }
+    }
+
+    // Fallback to audio_url field
+    final audioUrl = stop['audio_url'];
+    print('PackageDetails: Checking audio_url: $audioUrl');
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      final fullUrl = MediaService.getFullUrl(audioUrl);
+      print('PackageDetails: Full fallback URL from audio_url: $fullUrl');
+      return fullUrl;
+    }
+
+    // Check for other possible audio fields
+    final audioUrlAlt = stop['audioUrl'];
+    print('PackageDetails: Checking audioUrl: $audioUrlAlt');
+    if (audioUrlAlt != null && audioUrlAlt.isNotEmpty) {
+      final fullUrl = MediaService.getFullUrl(audioUrlAlt);
+      print('PackageDetails: Full alternative URL from audioUrl: $fullUrl');
+      return fullUrl;
+    }
+
+    // Check if there's a direct URL in the stop data
+    final directUrl = stop['url'];
+    print('PackageDetails: Checking direct url field: $directUrl');
+    if (directUrl != null && directUrl.isNotEmpty) {
+      final fullUrl = MediaService.getFullUrl(directUrl);
+      print('PackageDetails: Full URL from direct url field: $fullUrl');
+      return fullUrl;
+    }
+
+    // Final fallback - don't use external URL, use empty string to indicate no audio
+    print('PackageDetails: No audio URL found in any field, returning empty string');
+    return '';
+  }
 }
 
 // When user drags the slider
 
 /* ------------------------------ Gallery Page ------------------------------- */
-void _showBuyTourDialog(BuildContext parentContext) {
+void _showBuyTourDialog(BuildContext parentContext, Map<String, dynamic>? package) {
   showDialog(
     context: parentContext,
     barrierDismissible: true,
@@ -716,7 +1013,7 @@ void _showBuyTourDialog(BuildContext parentContext) {
                     Navigator.of(parentContext).push(
                       MaterialPageRoute(
                         builder: (context) =>
-                            CheckoutScreen(),
+                            CheckoutScreen(package: package),
                       ),
                     );
                   },
@@ -798,8 +1095,9 @@ class _EllaDetailsSection extends StatelessWidget {
   final double? distanceToFirstStop;
   final List<Map<String, dynamic>>? allStops;
   final double? totalDistance;
+  final bool hasPurchased;
 
-  const _EllaDetailsSection({this.package, required this.getPackageLocation, this.distanceToFirstStop, this.allStops, this.totalDistance});
+  const _EllaDetailsSection({this.package, required this.getPackageLocation, this.distanceToFirstStop, this.allStops, this.totalDistance, required this.hasPurchased});
 
   void _onShowDirectionsToFirstStop(BuildContext context) {
     if (package != null &&
@@ -927,7 +1225,7 @@ class _EllaDetailsSection extends StatelessWidget {
                 final firstStop = allStops?.isNotEmpty == true ? allStops![0] : null;
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MyTripScreen(stop: firstStop, allStops: allStops)),
+                  MaterialPageRoute(builder: (context) => MyTripScreen(stop: firstStop, allStops: allStops, package: package, isPreviewMode: !hasPurchased)),
                 );
               },
               style: OutlinedButton.styleFrom(
@@ -946,7 +1244,7 @@ class _EllaDetailsSection extends StatelessWidget {
                   Icon(Icons.headset, color: Colors.blue, size: 14),
                   const SizedBox(width: 6),
                   Text(
-                    'View Tour',
+                    hasPurchased ? 'View Tour' : 'Preview Tour',
                     style: TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.w600,
@@ -1059,6 +1357,8 @@ class _AudioCard extends StatelessWidget {
   final VoidCallback onPlayAudio;
   final VoidCallback? onShowDirections;
   final bool isCurrentlyPlaying;
+  final bool isPreviewLimited;
+  final bool showPreviewBadge;
 
   const _AudioCard({
     required this.title,
@@ -1068,6 +1368,8 @@ class _AudioCard extends StatelessWidget {
     required this.onPlayAudio,
     this.onShowDirections,
     required this.isCurrentlyPlaying,
+    this.isPreviewLimited = false,
+    this.showPreviewBadge = false,
   });
 
   @override
@@ -1087,13 +1389,36 @@ class _AudioCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    if (showPreviewBadge)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                        ),
+                        child: const Text(
+                          'PREVIEW',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 // Buttons row
@@ -1103,12 +1428,14 @@ class _AudioCard extends StatelessWidget {
                       icon: isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
                       label: 'Play audio',
                       onTap: onPlayAudio,
+                      isDisabled: isPreviewLimited,
                     ),
                     const SizedBox(width: 16),
                     _ActionButton(
                       icon: Icons.directions,
                       label: 'Show directions',
                       onTap: onShowDirections ?? () {},
+                      isDisabled: isPreviewLimited,
                     ),
                   ],
                 ),
@@ -1177,27 +1504,35 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isDisabled;
 
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.blue, size: 18),
+          Icon(
+            icon,
+            color: isDisabled ? Colors.grey : Colors.blue,
+            size: 18
+          ),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: const Color.fromARGB(255, 193, 198, 202),
+              color: isDisabled
+                  ? Colors.grey
+                  : const Color.fromARGB(255, 193, 198, 202),
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

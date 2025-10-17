@@ -473,4 +473,23 @@ class DashboardApi {
       return {'success': false, 'message': error.toString()};
     }
   }
+
+  // Check payment status for a package
+  Future<Map<String, dynamic>> checkPaymentStatus(String packageId, String userId) async {
+    try {
+      // Create a new client without auth header for this endpoint
+      final http.Response response = await http.get(
+        Uri.parse('${apiClient.baseUrl}/packages/$packageId/payment-status?userId=$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          // Don't include Authorization header for payment status check
+        },
+      );
+
+      return _parseResponse(response);
+    } catch (error) {
+      print('Error checking payment status: $error');
+      return {'success': false, 'message': error.toString()};
+    }
+  }
 }

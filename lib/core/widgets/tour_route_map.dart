@@ -10,6 +10,7 @@ class TourRouteMap extends StatefulWidget {
   final List<TourStop> tourStops;
   final bool showRouteLine;
   final int? focusedStopIndex;
+  final LatLng? currentLocation;
   final VoidCallback? onStopTap;
   final VoidCallback? onMapTap;
 
@@ -18,6 +19,7 @@ class TourRouteMap extends StatefulWidget {
     required this.tourStops,
     this.showRouteLine = true,
     this.focusedStopIndex,
+    this.currentLocation,
     this.onStopTap,
     this.onMapTap,
   });
@@ -30,6 +32,8 @@ class _TourRouteMapState extends State<TourRouteMap> {
   late MapController _mapController;
   List<LatLng> _routePoints = [];
   List<Polyline> _routePolylines = [];
+  List<LatLng> _currentToStopRoute = [];
+  List<Polyline> _currentToStopPolylines = [];
   bool _isLoadingRoute = false;
   String _routeError = '';
   Map<String, dynamic>? _routeInfo;
@@ -39,13 +43,16 @@ class _TourRouteMapState extends State<TourRouteMap> {
     super.initState();
     _mapController = MapController();
     _loadRoute();
+    _loadCurrentToStopRoute();
   }
 
   @override
   void didUpdateWidget(covariant TourRouteMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.focusedStopIndex != widget.focusedStopIndex) {
+    if (oldWidget.focusedStopIndex != widget.focusedStopIndex ||
+        oldWidget.currentLocation != widget.currentLocation) {
       _focusOnStop();
+      _loadCurrentToStopRoute();
     }
     if (oldWidget.tourStops != widget.tourStops) {
       _loadRoute();
@@ -138,22 +145,118 @@ class _TourRouteMapState extends State<TourRouteMap> {
     }
   }
 
+  Future<void> _loadCurrentToStopRoute() async {
+    if (widget.currentLocation == null || widget.focusedStopIndex == null) {
+      setState(() {
+        _currentToStopRoute = [];
+        _currentToStopPolylines = [];
+      });
+      return;
+    }
+
+    final focusedStop = widget.tourStops[widget.focusedStopIndex!];
+    if (focusedStop.location == null) {
+      setState(() {
+        _currentToStopRoute = [];
+        _currentToStopPolylines = [];
+      });
+      return;
+    }
+
+    try {
+      final points = [
+        widget.currentLocation!,
+        LatLng(focusedStop.location!.latitude, focusedStop.location!.longitude),
+      ];
+
+      final routePoints = await MapboxRouteService.getWalkingRoute(points.first, points.last);
+
+      setState(() {
+        _currentToStopRoute = routePoints ?? points;
+        if (_currentToStopRoute.isNotEmpty) {
+          _currentToStopPolylines = [
+            Polyline(
+              points: _currentToStopRoute,
+              strokeWidth: 4.0,
+              color: Colors.blue.withOpacity(0.8),
+              borderColor: Colors.white.withOpacity(0.5),
+              borderStrokeWidth: 2.0,
+            ),
+          ];
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _currentToStopRoute = [];
+        _currentToStopPolylines = [];
+      });
+    }
+  }
+
   List<Marker> _buildStopMarkers() {
     final markers = <Marker>[];
     final validStops = widget.tourStops
         .where((stop) => stop.location != null)
         .toList()
       ..sort((a, b) => a.sequenceNo.compareTo(b.sequenceNo));
-    
+
+    // Add current location marker if provided
+    if (widget.currentLocation != null) {
+      markers.add(
+        Marker(
+          point: widget.currentLocation!,
+          width: 40.0,
+          height: 35.0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // "You are here" label above the marker
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: const Text(
+                  'You are here',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 1),
+              // Small blue circle marker
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.my_location,
+                  color: Colors.white,
+                  size: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     for (int i = 0; i < validStops.length; i++) {
       final stop = validStops[i];
       final isFocused = widget.tourStops.indexOf(stop) == widget.focusedStopIndex;
-      
+
       markers.add(
         Marker(
           point: LatLng(stop.location!.latitude, stop.location!.longitude),
-          width: 40.0,
-          height: 40.0,
+          width: 60.0, // Increased width to accommodate label
+          height: 60.0, // Increased height to accommodate label
           child: GestureDetector(
             onTap: () {
               widget.onStopTap?.call();
@@ -162,34 +265,70 @@ class _TourRouteMapState extends State<TourRouteMap> {
                 15.0,
               );
             },
-            child: _buildStopMarker(i + 1, isFocused, i == 0, i == validStops.length - 1),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Label above the marker for focused stop
+                if (isFocused)
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 120), // Increased width for multi-line text
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      stop.stopName ?? 'Stop ${i + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2, // Allow up to 2 lines
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                const SizedBox(height: 2),
+                // The stop marker
+                _buildStopMarker(i + 1, isFocused, i == 0, i == validStops.length - 1),
+              ],
+            ),
           ),
         ),
       );
     }
-    
+
     return markers;
   }
 
   Widget _buildStopMarker(int stopNumber, bool isFocused, bool isStart, bool isEnd) {
-    Color iconColor;
-    IconData icon;
+    // Use brown color for all stops in preview mode, red only for the actual last stop
+    final isPreviewMode = widget.tourStops.length <= 2; // Assuming preview mode shows max 2 stops
+    final iconColor = (isEnd && !isPreviewMode) ? Colors.red : const Color.fromARGB(255, 157, 92, 30);
+    final icon = (isEnd && !isPreviewMode) ? Icons.flag : Icons.location_on;
 
-    if (isStart) {
-      iconColor = Colors.green;
-      icon = Icons.play_arrow;
-    } else if (isEnd) {
-      iconColor = Colors.red;
-      icon = Icons.flag;
-    } else {
-      iconColor = const Color.fromARGB(255, 157, 92, 30);
-      icon = Icons.location_on;
+    if (isFocused) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.8),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.red, width: 2),
+        ),
+        child: Icon(
+          icon,
+          color: iconColor,
+          size: 24,
+        ),
+      );
     }
 
     return Icon(
       icon,
       color: iconColor,
-      size: isFocused ? 30 : 24,
+      size: 24,
     );
   }
 
@@ -219,7 +358,10 @@ class _TourRouteMapState extends State<TourRouteMap> {
               
               if (widget.showRouteLine && _routePolylines.isNotEmpty)
                 PolylineLayer(polylines: _routePolylines),
-              
+
+              if (_currentToStopPolylines.isNotEmpty)
+                PolylineLayer(polylines: _currentToStopPolylines),
+
               MarkerLayer(markers: _buildStopMarkers()),
             ],
           ),

@@ -1,12 +1,7 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 class EnvConfig {
-  static String get baseUrl => dotenv.get('BASE_URL', fallback: 'http://localhost:3001/api/v1');
-  static String get googleMapsApiKey => dotenv.get('GOOGLE_MAPS_API_KEY', fallback: '');
-  static String get mapboxAccessToken => dotenv.get('MAPBOX_ACCESS_TOKEN', fallback: '');
-  static bool get debug => dotenv.get('DEBUG', fallback: 'true') == 'true';
-  
-  static Future<void> load() async {
-    await dotenv.load(fileName: '.env');
-  }
+  static String get baseUrl => 'http://localhost:3001/api/v1';
+  static String get googleMapsApiKey => '';
+  static String get mapboxAccessToken => '';
+  static String get stripePublishableKey => 'pk_test_51S5PkcEnC4L5QwU6rkUoyvBqOCzWYx8CRSEs95nde1jOZ2XxaAPYQ62riaEB0X1PrjJpBzh8EOdTMk8H9wz4ISwY00iK4x8E1W';
+  static bool get debug => true;
 }
