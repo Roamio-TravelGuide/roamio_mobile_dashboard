@@ -4,6 +4,7 @@ import 'package:Roamio/core/api/api_client.dart';
 import '../../api/traveller_api.dart';
 // TODO: Replace with your actual details page import
 import 'package-details.dart';
+import 'mytrip.dart';
 
 class TravelPackage {
   final String id;
@@ -66,12 +67,14 @@ class _MyTripsState extends State<MyTrips> {
     final travellerApi = TravellerApi(
       apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl),
     );
-    final response = await travellerApi.getMyTrips();
-    print('DEBUG: getMyTrips response = $response');
+
+    // Fetch paid packages from payment table instead of all packages
+    final response = await travellerApi.getMyPaidTrips();
+    print('DEBUG: getMyPaidTrips response = $response');
 
     if (response['data'] != null && response['data'] is List && response['data'].isNotEmpty) {
       final List<dynamic> data = response['data'];
-      print('DEBUG: parsed data = $data');
+      print('DEBUG: parsed paid trips data = $data');
 
       rawPackages = List<Map<String, dynamic>>.from(data);
 
@@ -100,9 +103,9 @@ class _MyTripsState extends State<MyTrips> {
           )
           .toList();
 
-      print('DEBUG: parsed packages = $packages');
+      print('DEBUG: parsed paid packages = $packages');
     } else {
-      errorMessage = response['message'] ?? 'Failed to load trips';
+      errorMessage = response['message'] ?? 'No paid trips found';
     }
   } catch (e) {
     errorMessage = e.toString();
@@ -184,18 +187,17 @@ class _MyTripsState extends State<MyTrips> {
                             final index = packages.indexOf(package);
                             final rawPackage = index >= 0 && index < rawPackages.length ? rawPackages[index] : null;
 
-                            // Pass package details to your details page
+                            // Navigate to MyTrip screen directly since user already purchased
+                            // Pass isPaidPackage: true to grant full access
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => Theme(
-                                  data: Theme.of(context).copyWith(
-                                    scaffoldBackgroundColor: const Color(
-                                      0xFF0D0D12,
-                                    ),
-                                    canvasColor: const Color(0xFF0D0D12),
-                                  ),
-                                  child: DestinationDetailsPage(package: rawPackage),
+                                builder: (context) => MyTripScreen(
+                                  package: rawPackage,
+                                  allStops: rawPackage?['tour_stops'] != null
+                                      ? List<Map<String, dynamic>>.from(rawPackage!['tour_stops'])
+                                      : null,
+                                  isPaidPackage: true, // Explicitly mark as paid package
                                 ),
                               ),
                             );

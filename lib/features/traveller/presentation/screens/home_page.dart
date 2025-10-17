@@ -12,6 +12,7 @@ import '../../api/dashboard_api.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/media_service.dart';
+import 'package-details.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -45,7 +46,13 @@ class _HomePageState extends State<HomePage> {
   List<Destination> recentTours = [];
   List<Destination> trendingTours = [];
   List<Destination> recommendedTours = [];
-  
+
+  // Raw package data for navigation
+  List<Map<String, dynamic>> nearbyPackages = [];
+  List<Map<String, dynamic>> recentPackages = [];
+  List<Map<String, dynamic>> trendingPackages = [];
+  List<Map<String, dynamic>> recommendedPackages = [];
+
   // Location
   LatLng? _currentLocation;
 
@@ -117,6 +124,7 @@ class _HomePageState extends State<HomePage> {
     if (_currentLocation == null) {
       setState(() {
         nearbyTours = [];
+        nearbyPackages = [];
         isLoadingNearby = false;
       });
       return;
@@ -133,8 +141,12 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (response['success'] == true) {
-        final tours = _convertApiResponseToDestinations(response['data'] ?? []);
-        setState(() { nearbyTours = tours; });
+        final rawData = response['data'] ?? [];
+        final tours = _convertApiResponseToDestinations(rawData);
+        setState(() {
+          nearbyTours = tours;
+          nearbyPackages = List<Map<String, dynamic>>.from(rawData);
+        });
       }
     } catch (error) {
       print('Error loading nearby tours: $error');
@@ -149,8 +161,12 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await dashboardApi.getRecentTours(limit: 3, days: 30);
       if (response['success'] == true) {
-        final tours = _convertApiResponseToDestinations(response['data'] ?? []);
-        setState(() { recentTours = tours; });
+        final rawData = response['data'] ?? [];
+        final tours = _convertApiResponseToDestinations(rawData);
+        setState(() {
+          recentTours = tours;
+          recentPackages = List<Map<String, dynamic>>.from(rawData);
+        });
       }
     } catch (error) {
       print('Error loading recent tours: $error');
@@ -165,8 +181,12 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await dashboardApi.getTrendingTours(limit: 4, period: 'week');
       if (response['success'] == true) {
-        final tours = _convertApiResponseToDestinations(response['data'] ?? []);
-        setState(() { trendingTours = tours; });
+        final rawData = response['data'] ?? [];
+        final tours = _convertApiResponseToDestinations(rawData);
+        setState(() {
+          trendingTours = tours;
+          trendingPackages = List<Map<String, dynamic>>.from(rawData);
+        });
       }
     } catch (error) {
       print('Error loading trending tours: $error');
@@ -181,8 +201,12 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await dashboardApi.getRecommendedTours(limit: 6);
       if (response['success'] == true) {
-        final tours = _convertApiResponseToDestinations(response['data'] ?? []);
-        setState(() { recommendedTours = tours; });
+        final rawData = response['data'] ?? [];
+        final tours = _convertApiResponseToDestinations(rawData);
+        setState(() {
+          recommendedTours = tours;
+          recommendedPackages = List<Map<String, dynamic>>.from(rawData);
+        });
       }
     } catch (error) {
       print('Error loading recommended tours: $error');
@@ -227,7 +251,62 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleDestinationTap(Destination destination) {
-    Navigator.pushNamed(context, '/tour-details', arguments: destination);
+    // Always fetch complete package data from API to ensure we have all tour stops
+    _fetchAndNavigateToPackageDetails(destination.id);
+  }
+
+  Future<void> _fetchAndNavigateToPackageDetails(String packageId) async {
+    try {
+      final response = await dashboardApi.getPackageById(packageId);
+      if (response['success'] == true && response['data'] != null) {
+        final packageData = response['data'];
+        print('HomePage: Fetched package data with ${packageData['tour_stops']?.length ?? 0} stops');
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Theme(
+              data: Theme.of(context).copyWith(
+                scaffoldBackgroundColor: const Color(0xFF0D0D12),
+                canvasColor: const Color(0xFF0D0D12),
+              ),
+              child: DestinationDetailsPage(package: packageData),
+            ),
+          ),
+        );
+      } else {
+        print('HomePage: API call failed or returned no data');
+        // Fallback to basic package data if API call fails
+        _navigateWithBasicData(packageId);
+      }
+    } catch (e) {
+      print('HomePage: Error fetching package details: $e');
+      _navigateWithBasicData(packageId);
+    }
+  }
+
+  void _navigateWithBasicData(String packageId) {
+    // Create basic package data as fallback
+    final basicPackage = {
+      'id': packageId,
+      'title': 'Package Details',
+      'description': 'Loading package details...',
+      'price': 0.0,
+      'tour_stops': [],
+    };
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Theme(
+          data: Theme.of(context).copyWith(
+            scaffoldBackgroundColor: const Color(0xFF0D0D12),
+            canvasColor: const Color(0xFF0D0D12),
+          ),
+          child: DestinationDetailsPage(package: basicPackage),
+        ),
+      ),
+    );
   }
 
   void _handleSearch(String query) {

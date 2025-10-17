@@ -1,9 +1,7 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:io';
 import '../../../../core/widgets/location_picker_map.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/config/env_config.dart';
@@ -574,7 +572,7 @@ class _AddHiddenPageState extends State<AddHiddenPage> {
   }
 
   Widget _buildImagePreview(XFile imageFile) {
-    return FutureBuilder<Uint8List?>(
+    return FutureBuilder<Uint8List>(
       future: imageFile.readAsBytes(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {

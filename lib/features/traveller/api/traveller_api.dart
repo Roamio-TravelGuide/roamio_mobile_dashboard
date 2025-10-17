@@ -83,6 +83,25 @@ try {
   }
 }
 
+Future<Map<String, dynamic>> getMyPaidTrips() async {
+try {
+  final response = await apiClient.get('/traveller/my-paid-trips');
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to load my paid trips: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching my paid trips: $error');
+    return {'success': false, 'data': null, 'message': error.toString()};
+  }
+}
+
 Future<Map<String, dynamic>> createPaymentIntent(double amount, {String? packageId, String currency = 'usd'}) async {
   try {
     final data = {
@@ -251,7 +270,7 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
 
       // Parse the response body
       final responseBody = json.decode(response.body);
-      
+
       // Access the data using proper Map syntax
       if (responseBody['success'] == true && responseBody['data'] != null) {
         final pois = responseBody['data'] as List;
@@ -268,6 +287,26 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
       // Silent fail - return empty list
     }
     return [];
+  }
+
+  Future<Map<String, dynamic>> getTourPackageById(int tourPackageId) async {
+    try {
+      final response = await apiClient.get('/traveller/tour-package/$tourPackageId');
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to fetch tour package: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching tour package: $error');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> createHiddenPlace({
@@ -327,3 +366,4 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
   }
 }
 }
+
