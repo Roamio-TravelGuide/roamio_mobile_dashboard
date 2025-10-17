@@ -64,10 +64,10 @@ class _MyTripScreenState extends State<MyTripScreen> {
   }
 
   void _initializeTourStops() async {
-    // Check if this is explicitly marked as a paid package (from successful payment)
-    if (widget.isPaidPackage == true) {
+    // Check if this is explicitly marked as a paid package (from successful payment or MyTrips)
+    if (widget.isPaidPackage == true || (widget.package != null && widget.isPreviewMode != true)) {
       hasPurchased = true;
-      print('MyTrip: This is a paid package - granting full access');
+      print('MyTrip: This is a paid package or from MyTrips - granting full access');
     } else {
       // Check if this is preview mode (from package details for unpaid users)
       bool isPreviewMode = widget.isPreviewMode == true;
@@ -481,12 +481,12 @@ class _MyTripScreenState extends State<MyTripScreen> {
                 children: [
                   _buildDestinationHeader(),
                   _buildMapSection(),
-                  _buildRestaurantsSection(),
                 ],
               ),
             ),
           ),
           _buildAudioPlayer(),
+          _buildRestaurantsSection(),
         ],
       ),
     );
