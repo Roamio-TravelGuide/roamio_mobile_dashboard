@@ -1,38 +1,193 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  
+  <!-- Important: Add viewport meta tag for better mobile experience -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="roamio_mobile_dashbaord">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Android meta tags -->
+  <meta name="theme-color" content="#0D0D12">
+  <meta name="application-name" content="Roamio">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>roamio_mobile_dashbaord</title>
+  <title>Roamio - Travel Companion</title>
   <link rel="manifest" href="manifest.json">
+  
+  <style>
+    /* Prevent scrolling and improve map interaction */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0D0D12;
+    }
+    
+    /* Loading screen styles */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0D0D12;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <div>Loading Roamio...</div>
+    <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;" id="location-status">
+      Preparing location services...
+    </div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+  
+  <script>
+    // Enhanced location service for web
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Initializing enhanced location services...');
+      
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser');
+        updateLocationStatus('Geolocation not supported');
+        return;
+      }
+      
+      // Request precise location immediately
+      requestPreciseLocation();
+      
+      // Set up periodic location updates (every 30 seconds)
+      setInterval(requestPreciseLocation, 30000);
+    });
+    
+    function requestPreciseLocation() {
+      const options = {
+        enableHighAccuracy: true,  // Request GPS if available
+        timeout: 15000,           // 15 second timeout
+        maximumAge: 0             // Don't use cached position
+      };
+      
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+          
+          console.log('High accuracy location obtained:');
+          console.log('- Latitude:', lat);
+          console.log('- Longitude:', lng);
+          console.log('- Accuracy:', accuracy + ' meters');
+          console.log('- Timestamp:', new Date(position.timestamp));
+          
+          // Update loading screen status
+          let accuracyText = 'High accuracy';
+          if (accuracy > 100) accuracyText = 'Medium accuracy';
+          if (accuracy > 1000) accuracyText = 'Low accuracy';
+          
+          updateLocationStatus(`Location ready (${accuracyText})`);
+          
+          // Store location in localStorage for Flutter to access
+          try {
+            localStorage.setItem('lastKnownLocation', JSON.stringify({
+              latitude: lat,
+              longitude: lng,
+              accuracy: accuracy,
+              timestamp: position.timestamp
+            }));
+          } catch (e) {
+            console.log('Could not store location in localStorage:', e);
+          }
+        },
+        function(error) {
+          console.warn('Location error:', error);
+          let errorMessage = 'Location service unavailable';
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location permission denied';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timeout';
+              break;
+          }
+          
+          updateLocationStatus(errorMessage);
+        },
+        options
+      );
+    }
+    
+    function updateLocationStatus(message) {
+      const statusElement = document.getElementById('location-status');
+      if (statusElement) {
+        statusElement.textContent = message;
+      }
+    }
+    
+    // Hide loading screen when Flutter is ready
+    window.addEventListener('flutter-first-frame', function() {
+      console.log('Flutter is ready, hiding loading screen');
+      const loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.style.display = 'none';
+      }
+    });
+    
+    // Handle Flutter service worker registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('flutter_service_worker.js?v=' + Date.now())
+          .then(function (registration) {
+            console.log('Flutter service worker registered:', registration);
+          })
+          .catch(function (error) {
+            console.log('Flutter service worker registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

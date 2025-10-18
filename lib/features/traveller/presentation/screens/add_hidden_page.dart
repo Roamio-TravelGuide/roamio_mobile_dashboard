@@ -42,15 +42,22 @@ class _AddHiddenPageState extends State<AddHiddenPage> {
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
     
+    print('Fetching current location...');
     final location = await LocationService.getCurrentLatLng();
+    
     if (location != null && mounted) {
+      print('Location obtained: ${location.latitude}, ${location.longitude}');
       setState(() {
         _currentLocation = location;
         _selectedLocation = location;
         _isLoadingLocation = false;
       });
+      // Update the location controller
+      _reverseGeocode(location);
     } else {
+      print('Failed to get location');
       setState(() => _isLoadingLocation = false);
+      _showSnackBar('Failed to get current location', isError: true);
     }
   }
 
