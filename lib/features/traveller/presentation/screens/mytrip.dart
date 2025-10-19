@@ -19,6 +19,7 @@ import '../../../../core/models/tour_package.dart';
 import 'package_checkout.dart';
 import '../../api/dashboard_api.dart';
 import '../../../../core/utils/storage_helper.dart';
+import '../../../../core/services/payment_verification_service.dart';
 
 class MyTripScreen extends StatefulWidget {
   final Map<String, dynamic>? stop;
@@ -71,33 +72,50 @@ class _MyTripScreenState extends State<MyTripScreen> {
   }
 
   void _initializeTourStops() async {
+    print('MyTrip: Initializing tour stops...');
+    
     // Check if this is explicitly marked as a paid package (from successful payment or MyTrips)
-    if (widget.isPaidPackage == true || (widget.package != null && widget.isPreviewMode != true)) {
+    if (widget.isPaidPackage == true) {
       hasPurchased = true;
-      print('MyTrip: This is a paid package or from MyTrips - granting full access');
-    } else {
-      // Check if this is preview mode (from package details for unpaid users)
-      bool isPreviewMode = widget.isPreviewMode == true;
-
-      // Check purchase status if package is provided and in preview mode
-      if (widget.package != null && isPreviewMode) {
-        await _checkPurchaseStatus();
-      } else if (isPreviewMode) {
-        // Force preview mode for unpaid users
-        hasPurchased = false;
+      print('MyTrip: This is explicitly marked as a paid package - granting full access');
+    } else if (widget.package != null) {
+      // Use the new payment verification service to check payment status
+      final packageIdRaw = widget.package!['id'];
+      final packageId = packageIdRaw?.toString();
+      if (packageId != null) {
+        print('MyTrip: Checking payment status for package ID: $packageId (raw: $packageIdRaw)');
+        try {
+          final accessLevel = await PaymentVerificationService.getPackageAccessLevel(packageId);
+          hasPurchased = accessLevel == PackageAccessLevel.fullAccess;
+          print('MyTrip: Payment verification result - Access Level: $accessLevel, hasPurchased: $hasPurchased');
+        } catch (e) {
+          print('MyTrip: Error checking payment status: $e');
+          // Fallback to preview mode if verification fails
+          hasPurchased = widget.isPreviewMode != true;
+        }
       } else {
-        // If no package provided and not preview mode, assume this is from MyTrips (paid packages)
-        hasPurchased = true;
+        print('MyTrip: No package ID found, defaulting based on preview mode');
+        hasPurchased = widget.isPreviewMode != true;
       }
+    } else {
+      // If no package provided, assume this is from MyTrips (paid packages)
+      hasPurchased = true;
+      print('MyTrip: No package provided, assuming paid access');
     }
 
+    // Initialize tour stops based on payment status
     if (widget.allStops != null && widget.allStops!.isNotEmpty) {
-      // For paid packages, show all stops; for preview mode, limit to first 2
       if (hasPurchased) {
+        // Full access - show all stops
         tourStops = widget.allStops!;
+        print('MyTrip: Full access granted - showing all ${tourStops.length} stops');
       } else {
+        // Preview mode - limit to first 2 stops
         tourStops = widget.allStops!.take(2).toList();
+        print('MyTrip: Preview mode - limiting to first ${tourStops.length} stops');
       }
+      
+      // Set current stop index
       if (widget.stop != null) {
         currentStopIndex = tourStops.indexWhere(
           (stop) => stop['id'] == widget.stop!['id'],
@@ -108,6 +126,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
       tourStops = [widget.stop!];
       currentStopIndex = 0;
     } else {
+      // Fallback data
       tourStops = [
         {
           'title': 'Tanah Lot Temple',
@@ -116,7 +135,8 @@ class _MyTripScreenState extends State<MyTripScreen> {
       ];
       currentStopIndex = 0;
     }
-    print('Initialized tour stops (hasPurchased: $hasPurchased, isPaidPackage: ${widget.isPaidPackage}, total stops: ${tourStops.length}): $tourStops');
+    
+    print('MyTrip: Tour stops initialized - hasPurchased: $hasPurchased, isPaidPackage: ${widget.isPaidPackage}, total stops: ${tourStops.length}');
   }
 
   void _initializeLocationAndDirections() async {
@@ -212,24 +232,53 @@ class _MyTripScreenState extends State<MyTripScreen> {
     }
   }
 
-  void _changeStop(int newIndex) {
-    print('MyTrip: _changeStop called with newIndex: $newIndex, tourStops.length: ${tourStops.length}, hasPurchased: $hasPurchased, isPreviewMode: ${widget.isPreviewMode}');
+  void _changeStop(int newIndex) async {
+    print('MyTrip: _changeStop called with newIndex: $newIndex, tourStops.length: ${tourStops.length}, hasPurchased: $hasPurchased');
+    
+    // Check if the new index is within available stops
     if (newIndex >= 0 && newIndex < tourStops.length) {
       // For purchased packages, allow full access to all stops
       print('MyTrip: Allowing stop change to index: $newIndex (user has purchased: $hasPurchased)');
       setState(() => currentStopIndex = newIndex);
       _loadDirectionsForStop(tourStops[newIndex]);
-      // Reload restaurants for new location if stop has coordinates
       _loadRestaurantsForStop(tourStops[newIndex]);
-    } else {
-      // If trying to access beyond available stops, show dialog for unpaid users in preview mode
-      bool isPreviewMode = widget.isPreviewMode == true;
-      if (!hasPurchased && isPreviewMode && newIndex >= 2) {
-        print('MyTrip: Attempting to access beyond preview limit (index $newIndex >= 2), showing preview dialog');
-        _showPreviewLimitDialog();
-      } else {
-        print('MyTrip: Invalid index or out of bounds: $newIndex (user has purchased: $hasPurchased, isPreviewMode: $isPreviewMode)');
+      return;
+    }
+
+    // If trying to access beyond available stops, check if user has paid
+    if (newIndex >= tourStops.length) {
+      if (hasPurchased) {
+        // User has paid but we don't have more stops loaded - this shouldn't happen
+        print('MyTrip: User has paid but no more stops available (index $newIndex >= ${tourStops.length})');
+        return;
       }
+
+      // User hasn't paid - show preview limit dialog
+      if (widget.package != null) {
+        final packageIdRaw = widget.package!['id'];
+        final packageId = packageIdRaw?.toString();
+        if (packageId != null) {
+          // Double-check payment status using the verification service
+          try {
+            final canAccess = await PaymentVerificationService.canAccessStop(packageId, newIndex);
+            if (canAccess) {
+              // Payment status might have changed - reload the screen
+              print('MyTrip: Payment status changed, user can now access stop $newIndex');
+              _initializeTourStops();
+              if (mounted) setState(() {});
+              return;
+            }
+          } catch (e) {
+            print('MyTrip: Error checking stop access: $e');
+          }
+        }
+      }
+
+      // Show preview limit dialog
+      print('MyTrip: Attempting to access beyond preview limit (index $newIndex), showing preview dialog');
+      _showPreviewLimitDialog();
+    } else {
+      print('MyTrip: Invalid index: $newIndex');
     }
   }
 

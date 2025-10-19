@@ -89,13 +89,22 @@ class _MyTripsState extends State<MyTrips> {
                   destination = firstStop['location']['district'];
                 }
               }
+              // Fallback to city if district is not available
+              if (destination.isEmpty && pkg['tour_stops'] != null && pkg['tour_stops'] is List && pkg['tour_stops'].isNotEmpty) {
+                final firstStop = pkg['tour_stops'][0];
+                if (firstStop['location'] != null && firstStop['location']['city'] != null) {
+                  destination = firstStop['location']['city'];
+                }
+              }
 
               return TravelPackage(
                 id: pkg['id'].toString(),
                 title: pkg['title'] ?? '',
-                destination: destination,
+                destination: destination.isNotEmpty ? destination : 'Unknown Location',
                 price: (pkg['price'] ?? 0).toDouble(),
-                image: pkg['cover_image'] != null ? pkg['cover_image']['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image' : 'https://via.placeholder.com/400x250.png?text=No+Image',
+                image: pkg['cover_image'] != null && pkg['cover_image']['url'] != null
+                    ? 'http://localhost:3001${pkg['cover_image']['url']}'
+                    : 'https://via.placeholder.com/400x250.png?text=No+Image',
                 isDownloaded: false,
                 description: pkg['description'] ?? '',
               );
@@ -187,17 +196,19 @@ class _MyTripsState extends State<MyTrips> {
                             final index = packages.indexOf(package);
                             final rawPackage = index >= 0 && index < rawPackages.length ? rawPackages[index] : null;
 
-                            // Navigate to MyTrip screen directly since user already purchased
-                            // Pass isPaidPackage: true to grant full access
+                            print('MyTrips: Tapped package at index $index');
+                            print('MyTrips: Package ID: ${package.id}');
+                            print('MyTrips: Raw package data: $rawPackage');
+                            print('MyTrips: Raw package keys: ${rawPackage?.keys.toList()}');
+
+                            // Navigate to Package Details first (since user has paid, it will show "View Tour" button)
+                            // Pass isFromMyTrips: true to indicate this is a paid package
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MyTripScreen(
+                                builder: (context) => DestinationDetailsPage(
                                   package: rawPackage,
-                                  allStops: rawPackage?['tour_stops'] != null
-                                      ? List<Map<String, dynamic>>.from(rawPackage!['tour_stops'])
-                                      : null,
-                                  isPaidPackage: true, // Explicitly mark as paid package
+                                  isFromMyTrips: true, // Explicitly mark as coming from MyTrips (paid)
                                 ),
                               ),
                             );
@@ -312,7 +323,7 @@ class TravelPackageCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Price + Button
+                // Price only (removed download button as requested)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -324,57 +335,30 @@ class TravelPackageCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    package.isDownloaded
-                        ? ElevatedButton.icon(
-                            onPressed: null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[600],
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              "Downloaded",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: onDownload,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[600],
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.download,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              "Download",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
+                    // Removed download button - user has already paid for these packages
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.withOpacity(0.5)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            "Purchased",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],

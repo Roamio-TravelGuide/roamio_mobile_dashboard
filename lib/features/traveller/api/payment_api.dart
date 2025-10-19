@@ -27,6 +27,30 @@ class PaymentApi {
     }
   }
 
+  Future<Map<String, dynamic>> confirmPaymentIntent(
+    String paymentIntentId,
+    Map<String, dynamic> paymentMethodData,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '${ApiEndpoints.baseUrl}/payment/confirm-payment',
+        data: {
+          'paymentIntentId': paymentIntentId,
+          'paymentMethodData': paymentMethodData,
+        },
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) {
+        print('Payment confirmation error response: ${e.response?.data}');
+        throw Exception('Failed to confirm payment: ${e.response?.data?['error'] ?? e.message}');
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    }
+  }
+
   Future<Map<String, dynamic>> createStripPayment(Map<String, dynamic> paymentIntent) async {
     try {
       final response = await _dio.post(

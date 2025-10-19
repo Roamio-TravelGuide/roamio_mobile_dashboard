@@ -365,5 +365,144 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
     throw Exception('Error creating hidden place: $e');
   }
 }
+
+  // Review API methods
+  Future<Map<String, dynamic>> getReviewsByPackage(int packageId, {int limit = 10, int offset = 0}) async {
+    try {
+      final response = await apiClient.get(
+        '/traveller/packages/$packageId/reviews',
+        queryParameters: {
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to load reviews: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching reviews: $error');
+      return {'success': false, 'data': [], 'message': error.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> createReview({
+    required int packageId,
+    required int rating,
+    String? comments,
+  }) async {
+    try {
+      final data = {
+        'package_id': packageId,
+        'rating': rating,
+        if (comments != null && comments.isNotEmpty) 'comments': comments,
+      };
+
+      final response = await apiClient.post('/traveller/reviews', data);
+
+      if (response.statusCode == 201) {
+        final responseBody = json.decode(response.body);
+        return responseBody;
+      } else {
+        throw Exception('Failed to create review: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error creating review: $error');
+      return {'success': false, 'message': error.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateReview({
+    required int reviewId,
+    int? rating,
+    String? comments,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (rating != null) data['rating'] = rating;
+      if (comments != null) data['comments'] = comments;
+
+      final response = await apiClient.put('/traveller/reviews/$reviewId', data);
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        return responseBody;
+      } else {
+        throw Exception('Failed to update review: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error updating review: $error');
+      return {'success': false, 'message': error.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteReview(int reviewId) async {
+    try {
+      final response = await apiClient.delete('/traveller/reviews/$reviewId');
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        return responseBody;
+      } else {
+        throw Exception('Failed to delete review: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error deleting review: $error');
+      return {'success': false, 'message': error.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> getMyReviews({int limit = 10, int offset = 0}) async {
+    try {
+      final response = await apiClient.get(
+        '/traveller/reviews',
+        queryParameters: {
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to load my reviews: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching my reviews: $error');
+      return {'success': false, 'data': [], 'message': error.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> getPackageRatingStats(int packageId) async {
+    try {
+      final response = await apiClient.get('/traveller/packages/$packageId/rating-stats');
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        if (responseBody is Map<String, dynamic>) {
+          return responseBody;
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to load rating stats: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching rating stats: $error');
+      return {'success': false, 'data': null, 'message': error.toString()};
+    }
+  }
 }
 
