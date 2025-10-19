@@ -38,7 +38,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _processPayment() async {
-    await _createPaymentIntent();
+    // Show custom payment dialog for both mobile and web
+    _showCustomPaymentDialog();
   }
 
   Future<void> _createPaymentIntent() async {
@@ -73,67 +74,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           },
         };
       });
-
-      // Use different approaches for mobile vs web to match their native capabilities
-      if (!kIsWeb) {
-        // Mobile: Use Stripe Payment Sheet (native, secure)
-        print('Mobile: Initializing Payment Sheet...');
-        await Stripe.instance.initPaymentSheet(
-          paymentSheetParameters: SetupPaymentSheetParameters(
-            paymentIntentClientSecret: _paymentIntentData!['clientSecret'],
-            merchantDisplayName: 'Roamio Travel',
-            style: ThemeMode.dark,
-            allowsDelayedPaymentMethods: true,
-          ),
-        );
-
-        print('Mobile: Presenting Payment Sheet...');
-        await Stripe.instance.presentPaymentSheet();
-
-        print('Mobile Payment Sheet completed, retrieving actual PaymentIntent from Stripe...');
-
-        // CRITICAL: Retrieve the REAL PaymentIntent from Stripe to get actual status
-        try {
-          final paymentIntent = await Stripe.instance.retrievePaymentIntent(_paymentIntentData!['clientSecret']);
-          print('RETRIEVED PaymentIntent from Stripe API:');
-          print('ID: ${paymentIntent.id}');
-          print('Status: ${paymentIntent.status}');
-          print('Amount: ${paymentIntent.amount}');
-          print('Currency: ${paymentIntent.currency}');
-          print('Full PaymentIntent: $paymentIntent');
-
-          // Only proceed if Stripe confirms the payment actually succeeded
-                if (paymentIntent.status == 'succeeded') {
-                  print('✅ Stripe confirms payment succeeded, recording in database...');
-                  // Force status to 'completed' for mobile payments
-                  final mobilePaymentData = {
-                    'id': paymentIntent.id,
-                    'status': 'succeeded', // Force succeeded status
-                    'amount': paymentIntent.amount,
-                    'currency': paymentIntent.currency,
-                    'client_secret': _paymentIntentData!['clientSecret'],
-                    'created': paymentIntent.created,
-                    'metadata': _paymentIntentData!['metadata'],
-                  };
-                  await _recordPayment(mobilePaymentData);
-                  _showPaymentSuccessDialog();
-                } else {
-                  print('❌ Stripe shows payment status: ${paymentIntent.status}, not recording');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Payment status: ${paymentIntent.status}. Please try again.')),
-                  );
-                }
-        } catch (e) {
-          print('❌ Error retrieving PaymentIntent from Stripe: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to verify payment status. Please contact support.')),
-          );
-        }
-      } else {
-        // Web: Use proper Stripe Elements integration (like web dashboard)
-        print('Web: Using Stripe Elements integration...');
-        _showWebPaymentDialog();
-      }
 
     } catch (e) {
       print('Error creating payment intent: $e');
@@ -527,7 +467,320 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // Payment modal removed for simplified version
+  void _showCustomPaymentDialog() async {
+    // First create the payment intent
+    await _createPaymentIntent();
+    
+    if (_paymentIntentData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to initialize payment. Please try again.')),
+      );
+      return;
+    }
+
+    final TextEditingController cardNumberController = TextEditingController(text: '4242424242424242'); // Visa test card
+    final TextEditingController expiryController = TextEditingController(text: '12/34');
+    final TextEditingController cvcController = TextEditingController(text: '123');
+    final TextEditingController cardholderController = TextEditingController(text: 'John Doe');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxWidth: 350),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Complete Your Payment',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You are purchasing ${widget.package?['title'] ?? 'Tour Package'} for \$${(widget.package?['price']?.toStringAsFixed(0) ?? '5')}',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Test card info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Test Cards Available:',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '• Visa: 4242424242424242\n• Mastercard: 5555555555554444\n• Amex: 378282246310005',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Card Number
+              const Text(
+                'Card Number',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: cardNumberController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: '4242 4242 4242 4242',
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blue),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  filled: true,
+                  fillColor: const Color(0xFF2A2A2A),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Expiry and CVC Row
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Expiry',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: expiryController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'MM/YY',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.blue),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            filled: true,
+                            fillColor: const Color(0xFF2A2A2A),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'CVC',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: cvcController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: '123',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.blue),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            filled: true,
+                            fillColor: const Color(0xFF2A2A2A),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Pay Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(dialogContext).pop();
+                    await _processStripePayment(
+                      cardNumber: cardNumberController.text,
+                      expiry: expiryController.text,
+                      cvc: cvcController.text,
+                      cardholderName: cardholderController.text,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Pay Now',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processStripePayment({
+    required String cardNumber,
+    required String expiry,
+    required String cvc,
+    required String cardholderName,
+  }) async {
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
+    try {
+      print('Processing Stripe payment with backend confirmation...');
+
+      // Show processing message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Processing payment...'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+
+      // Parse expiry date
+      final expiryParts = expiry.split('/');
+      final expMonth = int.parse(expiryParts[0]);
+      final expYear = 2000 + int.parse(expiryParts[1]);
+
+      // Prepare payment method data for backend
+      final paymentMethodData = {
+        'cardNumber': cardNumber,
+        'expMonth': expMonth.toString(),
+        'expYear': expYear.toString(),
+        'cvc': cvc,
+        'cardholderName': cardholderName,
+      };
+
+      print('Confirming payment with backend...');
+      
+      // Use backend to confirm payment with Stripe (this will properly create payment method and confirm)
+      final confirmationResponse = await _paymentApi.confirmPaymentIntent(
+        _paymentIntentData!['paymentIntentId'],
+        paymentMethodData,
+      );
+
+      print('Backend confirmation response: $confirmationResponse');
+
+      if (confirmationResponse['success'] == true) {
+        print('✅ Payment confirmed successfully by backend');
+        _showPaymentSuccessDialog();
+      } else {
+        print('❌ Payment confirmation failed: ${confirmationResponse['error']}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Payment failed: ${confirmationResponse['error'] ?? 'Unknown error'}')),
+        );
+      }
+
+    } catch (e) {
+      print('Payment processing error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment failed: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isProcessingPayment = false;
+      });
+    }
+  }
 
   void _showWebPaymentDialog() {
     final TextEditingController cardNumberController = TextEditingController(text: '4242424242424242'); // Test card

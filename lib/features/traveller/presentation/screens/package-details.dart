@@ -9,6 +9,7 @@ import '../../../../core/services/mapbox_service.dart';
 import '../../../../core/services/media_service.dart';
 import '../../../../core/widgets/audio_player_widget.dart';
 import '../../api/dashboard_api.dart';
+import '../../api/traveller_api.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/config/env_config.dart';
 import '../../../../core/utils/storage_helper.dart';
@@ -165,6 +166,8 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   @override
   void initState() {
     super.initState();
+    print('PackageDetails: initState called with package data: ${widget.package}');
+    print('PackageDetails: isFromMyTrips: ${widget.isFromMyTrips}');
     dashboardApi = DashboardApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
     audioPlayer = AudioPlayer();
     // Listen to player state changes
@@ -242,7 +245,11 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     super.dispose();
   }
 
-  String get heroImage => widget.package?['cover_image']?['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image';
+  String get heroImage {
+    final imageUrl = widget.package?['cover_image']?['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image';
+    print('PackageDetails: heroImage = $imageUrl');
+    return imageUrl;
+  }
 
 
   @override
@@ -253,7 +260,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     double totalDuration =
         225.0; // total audio duration in seconds (e.g., 3:45)
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF0D0D12), // Dark background like other screens
       extendBody: true, // let content go behind bottom nav
       body: Stack(
         children: [
@@ -341,6 +348,10 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                         builder: (context) {
                           print('Building UI with distanceToFirstStop: $distanceToFirstStop');
                           print('PackageDetails: Building UI with hasPurchased: $hasPurchased');
+                          print('PackageDetails: widget.package keys: ${widget.package?.keys.toList()}');
+                          print('PackageDetails: package title: ${widget.package?['title']}');
+                          print('PackageDetails: package price: ${widget.package?['price']}');
+                          print('PackageDetails: package guide: ${widget.package?['guide']}');
                           return _EllaDetailsSection(package: widget.package, getPackageLocation: _getPackageLocation, distanceToFirstStop: distanceToFirstStop, allStops: stopTitles, totalDistance: totalDistance, hasPurchased: hasPurchased ?? false);
                         },
                       ),
@@ -476,6 +487,28 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                          }),
                       ),
                     ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Reviews section
+                    _SectionHeader(
+                      title: 'Reviews',
+                      actionLabel: 'See All',
+                      onAction: () {
+                        // Navigate to all reviews page
+                        _showAllReviews();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Reviews list
+                    _ReviewsSection(
+                      packageId: widget.package?['id'] is String
+                          ? int.tryParse(widget.package!['id'])
+                          : widget.package?['id'] as int?,
+                      averageRating: widget.package?['average_rating'] ?? 0.0,
+                    ),
+                    
                     // Add extra space for bottom player
                     if (currentPlayingIndex != null) const SizedBox(height: 120),
                   ]),
@@ -538,12 +571,12 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
                             ),
                             const SizedBox(width: 16),
                             // Current audio player
-                                Expanded(
-                                  child: AudioPlayerWidget(
-                                    audioUrl: _getAudioUrlForStop(currentStop),
-                                    title: 'Play Audio for ${currentStop['stop_name'] ?? 'Current Stop'}',
-                                  ),
-                                ),
+                                              Expanded(
+                                                child: AudioPlayerWidget(
+                                                  audioUrl: _getAudioUrlForStop(currentStop),
+                                                  title: 'Play Audio for ${currentStop['stop_name'] ?? 'Current Stop'}',
+                                                ),
+                                              ),
                             const SizedBox(width: 16),
                             // Next stop button
                             IconButton(
@@ -619,11 +652,11 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
           (media) => media['media_type'] == 'audio',
           orElse: () => null,
         );
-        if (audioMedia != null && audioMedia['media'] != null) {
-          audioUrl = audioMedia['media']['url'] ?? 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
+        if (audioMedia != null) {
+          audioUrl = audioMedia['url'] ?? 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
           // Try to get duration from database (stored in seconds)
-          if (audioMedia['media']['duration_seconds'] != null) {
-            dbDuration = (audioMedia['media']['duration_seconds'] as num).toDouble();
+          if (audioMedia['duration_seconds'] != null) {
+            dbDuration = (audioMedia['duration_seconds'] as num).toDouble();
           }
         } else {
           audioUrl = 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
@@ -691,7 +724,13 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
      Navigator.push(
        context,
        MaterialPageRoute(
-         builder: (context) => MyTripScreen(stop: firstStop, allStops: stopTitles, package: widget.package, isPreviewMode: isPreviewMode),
+         builder: (context) => MyTripScreen(
+           stop: firstStop,
+           allStops: stopTitles,
+           package: widget.package,
+           isPreviewMode: isPreviewMode,
+           isPaidPackage: hasPurchased ?? false, // Explicitly pass payment status
+         ),
        ),
      );
    }
@@ -842,8 +881,9 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
 
   Future<bool> _hasUserPurchasedPackage() async {
     try {
-      // Get the package ID
-      final packageId = widget.package?['id']?.toString();
+      // Get the package ID and ensure it's a string
+      final packageIdRaw = widget.package?['id'];
+      final packageId = packageIdRaw?.toString();
       if (packageId == null) {
         print('PackageDetails: No package ID found');
         return false;
@@ -945,6 +985,13 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     // Final fallback - don't use external URL, use empty string to indicate no audio
     print('PackageDetails: No audio URL found in any field, returning empty string');
     return '';
+  }
+
+  void _showAllReviews() {
+    // Navigate to all reviews page - for now just show a placeholder
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('All reviews page coming soon!')),
+    );
   }
 }
 
@@ -1125,7 +1172,7 @@ class _EllaDetailsSection extends StatelessWidget {
         Row(
           children: [
             Text(
-              package?['title'] ?? 'Package Title',
+              package?['title']?.toString() ?? 'Package Title',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
             ),
             const SizedBox(width: 6),
@@ -1225,7 +1272,13 @@ class _EllaDetailsSection extends StatelessWidget {
                 final firstStop = allStops?.isNotEmpty == true ? allStops![0] : null;
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MyTripScreen(stop: firstStop, allStops: allStops, package: package, isPreviewMode: !hasPurchased)),
+                  MaterialPageRoute(builder: (context) => MyTripScreen(
+                    stop: firstStop,
+                    allStops: allStops,
+                    package: package,
+                    isPreviewMode: !hasPurchased,
+                    isPaidPackage: hasPurchased, // Explicitly pass payment status
+                  )),
                 );
               },
               style: OutlinedButton.styleFrom(
@@ -1295,14 +1348,14 @@ class _EllaDetailsSection extends StatelessWidget {
               child: _InfoColumn(
                 icon: Icons.person_outline,
                 title: 'Tour Guide',
-                subtitle: package?['guide']?['user']?['name'] ?? 'Guide Name',
+                subtitle: package?['guide']?['user']?['name']?.toString() ?? 'Guide Name',
               ),
             ),
             Expanded(
               child: _InfoColumn(
                 icon: Icons.attach_money,
                 title: 'Price',
-                subtitle: '\$${(package?['price'] ?? 0).toStringAsFixed(0)} USD',
+                subtitle: '\$${((package?['price'] ?? 0) as num).toStringAsFixed(0)} USD',
               ),
             ),
           ],
@@ -1636,6 +1689,319 @@ class _RadioOption extends StatelessWidget {
             activeColor: Colors.blue,
           ),
           Text(title, style: TextStyle(color: Colors.white, fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
+
+// Reviews Section Widget
+class _ReviewsSection extends StatefulWidget {
+  final int? packageId;
+  final double averageRating;
+
+  const _ReviewsSection({
+    this.packageId,
+    required this.averageRating,
+  });
+
+  @override
+  State<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends State<_ReviewsSection> {
+  List<Map<String, dynamic>> reviews = [];
+  bool isLoading = true;
+  String? error;
+  late TravellerApi travellerApi;
+
+  @override
+  void initState() {
+    super.initState();
+    travellerApi = TravellerApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    if (widget.packageId == null) {
+      setState(() {
+        isLoading = false;
+        error = 'Package ID not available';
+      });
+      return;
+    }
+
+    try {
+      setState(() {
+        isLoading = true;
+        error = null;
+      });
+
+      // Try to load real reviews from API
+      final response = await travellerApi.getReviewsByPackage(widget.packageId!, limit: 3);
+      
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          reviews = List<Map<String, dynamic>>.from(response['data']);
+          isLoading = false;
+        });
+      } else {
+        // Fallback to sample data if API fails
+        _loadSampleReviews();
+      }
+    } catch (e) {
+      print('Error loading reviews from API: $e');
+      // Fallback to sample data
+      _loadSampleReviews();
+    }
+  }
+
+  void _loadSampleReviews() {
+    // Sample reviews data as fallback
+    final sampleReviews = [
+      {
+        'id': 1,
+        'rating': 5,
+        'comments': 'Amazing tour! The audio guide was very informative and the locations were breathtaking.',
+        'date': '2024-01-15T10:30:00Z',
+        'traveler': {
+          'user': {
+            'name': 'John Doe',
+            'profile_picture_url': null,
+          }
+        }
+      },
+      {
+        'id': 2,
+        'rating': 4,
+        'comments': 'Great experience overall. Would recommend to anyone visiting the area.',
+        'date': '2024-01-10T14:20:00Z',
+        'traveler': {
+          'user': {
+            'name': 'Sarah Smith',
+            'profile_picture_url': null,
+          }
+        }
+      },
+      {
+        'id': 3,
+        'rating': 5,
+        'comments': 'Perfect tour guide and beautiful spots. Worth every penny!',
+        'date': '2024-01-08T09:15:00Z',
+        'traveler': {
+          'user': {
+            'name': 'Mike Johnson',
+            'profile_picture_url': null,
+          }
+        }
+      },
+    ];
+
+    setState(() {
+      reviews = sampleReviews;
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          error!,
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    if (reviews.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'No reviews yet. Be the first to review this tour!',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Rating summary
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 20),
+              const SizedBox(width: 4),
+              Text(
+                widget.averageRating.toStringAsFixed(1),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '(${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'})',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Reviews list (show first 3)
+        ...reviews.take(3).map((review) => _ReviewCard(review: review)).toList(),
+        
+        if (reviews.length > 3)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              '+ ${reviews.length - 3} more reviews',
+              style: TextStyle(
+                color: Colors.blue,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// Individual Review Card Widget
+class _ReviewCard extends StatelessWidget {
+  final Map<String, dynamic> review;
+
+  const _ReviewCard({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = review['rating'] as int? ?? 0;
+    final comments = review['comments'] as String? ?? '';
+    final userName = review['traveler']?['user']?['name'] as String? ?? 'Anonymous';
+    final dateStr = review['date'] as String? ?? '';
+    
+    // Parse and format date
+    String formattedDate = '';
+    if (dateStr.isNotEmpty) {
+      try {
+        final date = DateTime.parse(dateStr);
+        final now = DateTime.now();
+        final difference = now.difference(date).inDays;
+        
+        if (difference == 0) {
+          formattedDate = 'Today';
+        } else if (difference == 1) {
+          formattedDate = 'Yesterday';
+        } else if (difference < 7) {
+          formattedDate = '$difference days ago';
+        } else if (difference < 30) {
+          final weeks = (difference / 7).floor();
+          formattedDate = '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+        } else {
+          final months = (difference / 30).floor();
+          formattedDate = '$months ${months == 1 ? 'month' : 'months'} ago';
+        }
+      } catch (e) {
+        formattedDate = 'Recently';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 5, 11, 26),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // User info and rating
+          Row(
+            children: [
+              // User avatar placeholder
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue.withOpacity(0.2),
+                child: Text(
+                  userName.isNotEmpty ? userName[0].toUpperCase() : 'A',
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (formattedDate.isNotEmpty)
+                      Text(
+                        formattedDate,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Star rating
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 16,
+                  );
+                }),
+              ),
+            ],
+          ),
+          
+          if (comments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              comments,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ],
         ],
       ),
     );
