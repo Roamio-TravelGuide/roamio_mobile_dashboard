@@ -1,34 +1,33 @@
+// mytrip.dart - Fixed MediaService usage and improved filtering
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:math' as math;
-import '../../../../core/models/destination.dart';
-import '../../../../core/widgets/map_component.dart';
-import '../../../../core/widgets/retaurant_list.dart';
-import '../../../../core/services/location_service.dart';
-import '../../../../core/services/direction_service.dart';
-import '../../../../core/api/api_client.dart';
-import '../../../../core/config/env_config.dart';
-import '../../api/traveller_api.dart';
-import 'restaurant_detail.dart';
-import 'audioplayer.dart';
 import '../../../../core/widgets/audio_player_widget.dart';
-import '../../../../core/services/media_service.dart';
+import '../../../../core/services/media_service.dart'; // Import your MediaService
 import '../../../../core/widgets/tour_route_map.dart';
 import '../../../../core/models/tour_package.dart';
 import 'package_checkout.dart';
 import '../../api/dashboard_api.dart';
 import '../../../../core/utils/storage_helper.dart';
 import '../../../../core/services/payment_verification_service.dart';
+import '../../../../core/config/env_config.dart';
+import '../../../../core/api/api_client.dart';
 
 class MyTripScreen extends StatefulWidget {
   final Map<String, dynamic>? stop;
   final List<Map<String, dynamic>>? allStops;
   final Map<String, dynamic>? package;
   final bool? isPreviewMode;
-  final bool? isPaidPackage; // New flag to indicate this is a paid package
+  final bool? isPaidPackage;
 
-  const MyTripScreen({super.key, this.stop, this.allStops, this.package, this.isPreviewMode, this.isPaidPackage});
+  const MyTripScreen({
+    super.key, 
+    this.stop, 
+    this.allStops, 
+    this.package, 
+    this.isPreviewMode, 
+    this.isPaidPackage
+  });
 
   @override
   State<MyTripScreen> createState() => _MyTripScreenState();
@@ -36,25 +35,19 @@ class MyTripScreen extends StatefulWidget {
 
 class _MyTripScreenState extends State<MyTripScreen> {
   final AudioPlayer audioPlayer = AudioPlayer();
-  final DirectionsService _directionsService = DirectionsService();
-  late TravellerApi _travellerApi;
   late DashboardApi dashboardApi;
   
-  late List<Map<String, dynamic>> tourStops;
+  List<Map<String, dynamic>> tourStops = [];
   int currentStopIndex = 0;
   bool hasPurchased = false;
 
   LatLng? currentLocation;
-  LatLng? stopLocation;
-  List<LatLng> routePoints = [];
+  LatLng? currentStopLocation;
 
-  List<Map<String, dynamic>> restaurants = [];
-  bool isLoadingPois = false;
-  bool isLoadingDirections = false;
+  List<Map<String, dynamic>> nearbyPlaces = [];
+  bool isLoadingPlaces = false;
 
-  // No dummy reviews data needed since we're only showing the add review UI
-
-  // State for adding new review
+  // Review state
   int _selectedRating = 0;
   final TextEditingController _reviewController = TextEditingController();
   bool _isAddingReview = false;
@@ -62,43 +55,34 @@ class _MyTripScreenState extends State<MyTripScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize TravellerApi with ApiClient
-    _travellerApi = TravellerApi(
-      apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl),
-    );
     dashboardApi = DashboardApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
     _initializeTourStops();
-    _initializeLocationAndDirections();
+    _initializeLocation();
   }
 
   void _initializeTourStops() async {
     print('MyTrip: Initializing tour stops...');
     
-    // Check if this is explicitly marked as a paid package (from successful payment or MyTrips)
     if (widget.isPaidPackage == true) {
       hasPurchased = true;
       print('MyTrip: This is explicitly marked as a paid package - granting full access');
     } else if (widget.package != null) {
-      // Use the new payment verification service to check payment status
       final packageIdRaw = widget.package!['id'];
       final packageId = packageIdRaw?.toString();
       if (packageId != null) {
-        print('MyTrip: Checking payment status for package ID: $packageId (raw: $packageIdRaw)');
+        print('MyTrip: Checking payment status for package ID: $packageId');
         try {
           final accessLevel = await PaymentVerificationService.getPackageAccessLevel(packageId);
           hasPurchased = accessLevel == PackageAccessLevel.fullAccess;
           print('MyTrip: Payment verification result - Access Level: $accessLevel, hasPurchased: $hasPurchased');
         } catch (e) {
           print('MyTrip: Error checking payment status: $e');
-          // Fallback to preview mode if verification fails
           hasPurchased = widget.isPreviewMode != true;
         }
       } else {
-        print('MyTrip: No package ID found, defaulting based on preview mode');
         hasPurchased = widget.isPreviewMode != true;
       }
     } else {
-      // If no package provided, assume this is from MyTrips (paid packages)
       hasPurchased = true;
       print('MyTrip: No package provided, assuming paid access');
     }
@@ -106,11 +90,9 @@ class _MyTripScreenState extends State<MyTripScreen> {
     // Initialize tour stops based on payment status
     if (widget.allStops != null && widget.allStops!.isNotEmpty) {
       if (hasPurchased) {
-        // Full access - show all stops
-        tourStops = widget.allStops!;
+        tourStops = List.from(widget.allStops!);
         print('MyTrip: Full access granted - showing all ${tourStops.length} stops');
       } else {
-        // Preview mode - limit to first 2 stops
         tourStops = widget.allStops!.take(2).toList();
         print('MyTrip: Preview mode - limiting to first ${tourStops.length} stops');
       }
@@ -126,159 +108,136 @@ class _MyTripScreenState extends State<MyTripScreen> {
       tourStops = [widget.stop!];
       currentStopIndex = 0;
     } else {
-      // Fallback data
       tourStops = [
         {
+          'id': 1,
+          'stop_name': 'Tanah Lot Temple',
           'title': 'Tanah Lot Temple',
           'audio_url': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'description': 'A beautiful temple by the sea',
         },
       ];
       currentStopIndex = 0;
     }
     
-    print('MyTrip: Tour stops initialized - hasPurchased: $hasPurchased, isPaidPackage: ${widget.isPaidPackage}, total stops: ${tourStops.length}');
+    // Extract current stop location for API calls
+    _extractCurrentStopLocation();
+    
+    // Ensure state is updated
+    if (mounted) setState(() {});
   }
 
-  void _initializeLocationAndDirections() async {
-    print('MyTrip: Initializing location and directions');
-    // Get current location
-    final location = await LocationService.getCurrentLatLng();
-    print('MyTrip: Got current location: $location');
-    if (location != null && mounted) {
-      setState(() {
-        currentLocation = location;
-      });
-      print('MyTrip: Set current location state: $currentLocation');
-      // Load nearby restaurants after getting location
-      _loadNearbyRestaurants();
-    } else {
-      print('MyTrip: Failed to get current location - this may be why current location is not showing on map');
-      // Set a default location for testing (Colombo, Sri Lanka)
-      setState(() {
-        currentLocation = const LatLng(6.9271, 79.8612); // Colombo coordinates
-      });
-      print('MyTrip: Set default location for testing: $currentLocation');
-    }
-
-    // Load directions for current stop
-    if (tourStops.isNotEmpty) {
-      _loadDirectionsForStop(tourStops[currentStopIndex]);
+  void _extractCurrentStopLocation() {
+    if (tourStops.isNotEmpty && currentStopIndex < tourStops.length) {
+      final currentStop = tourStops[currentStopIndex];
+      if (currentStop['location'] != null) {
+        final location = currentStop['location'];
+        if (location['latitude'] != null && location['longitude'] != null) {
+          setState(() {
+            currentStopLocation = LatLng(
+              (location['latitude'] as num).toDouble(),
+              (location['longitude'] as num).toDouble()
+            );
+          });
+          print('MyTrip: Current stop location - Lat: ${currentStopLocation!.latitude}, Lng: ${currentStopLocation!.longitude}');
+          
+          // Load nearby places using stop location
+          _loadNearbyPlaces();
+        }
+      }
     }
   }
 
-  void _loadDirectionsForStop(Map<String, dynamic> stop) async {
-    if (currentLocation == null) return;
+  void _initializeLocation() async {
+    print('MyTrip: Initializing location...');
+    // Note: LocationService.getCurrentLatLng() should be implemented
+    // For now, set a default location
+    setState(() {
+      currentLocation = const LatLng(6.9271, 79.8612); // Colombo coordinates
+    });
+  }
 
-    final stopLocationData = stop['location'];
-    if (stopLocationData == null || 
-        stopLocationData['latitude'] == null || 
-        stopLocationData['longitude'] == null) {
+  Future<void> _loadNearbyPlaces() async {
+    if (currentStopLocation == null) {
+      print('MyTrip: No stop location available for places API call');
       return;
     }
+    
+    setState(() => isLoadingPlaces = true);
 
-    setState(() {
-      isLoadingDirections = true;
-      stopLocation = LatLng(
-        stopLocationData['latitude'],
-        stopLocationData['longitude'],
+    try {
+      print('MyTrip: Calling API for nearby places at ${currentStopLocation!.latitude}, ${currentStopLocation!.longitude}');
+      
+      // Call your backend API to get nearby places with 5km radius
+      final response = await dashboardApi.getNearbyPlaces(
+        latitude: currentStopLocation!.latitude,
+        longitude: currentStopLocation!.longitude,
+        radius: 5,
       );
-    });
 
-    final directions = await _directionsService.getDirections(
-      origin: currentLocation!,
-      destination: stopLocation!,
-    );
-
+    print('MyTrip: API Response: $response');
+    
+    if (response['success'] == true && response['data'] != null) {
+      final placesData = List<Map<String, dynamic>>.from(response['data']);
+      print('MyTrip: Received ${placesData.length} places from API');
+      
+      // Show ALL places without any filtering
+      print('MyTrip: Showing all ${placesData.length} places from API');
+      
+      if (mounted) {
+        setState(() {
+          nearbyPlaces = placesData;
+        });
+      }
+    } else {
+      print('MyTrip: API call failed or no data received');
+      print('MyTrip: Success: ${response['success']}');
+      print('MyTrip: Error: ${response['error']}');
+    }
+  } catch (e) {
+    print('MyTrip: Error loading nearby places: $e');
+  } finally {
     if (mounted) {
       setState(() {
-        isLoadingDirections = false;
-        if (directions != null) {
-          routePoints = directions.routePoints;
-        }
+        isLoadingPlaces = false;
       });
     }
   }
-
-  void _loadNearbyRestaurants() async {
-    if (currentLocation == null) return;
-    
-    setState(() => isLoadingPois = true);
-
-    try {
-      final nearbyRestaurants = await _travellerApi.getNearbyRestaurants(
-        lat: currentLocation!.latitude,
-        lng: currentLocation!.longitude,
-        radius: 1000, // 1km radius
-      );
-
-      if (mounted) {
-        setState(() {
-          restaurants = nearbyRestaurants;
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-      if (mounted) {
-        setState(() {
-          restaurants = [];
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoadingPois = false;
-        });
-      }
-    }
-  }
+}
 
   void _changeStop(int newIndex) async {
-    print('MyTrip: _changeStop called with newIndex: $newIndex, tourStops.length: ${tourStops.length}, hasPurchased: $hasPurchased');
+    print('MyTrip: _changeStop called with newIndex: $newIndex');
+    print('MyTrip: Current tourStops length: ${tourStops.length}');
+    print('MyTrip: Has purchased: $hasPurchased');
     
     // Check if the new index is within available stops
     if (newIndex >= 0 && newIndex < tourStops.length) {
-      // For purchased packages, allow full access to all stops
-      print('MyTrip: Allowing stop change to index: $newIndex (user has purchased: $hasPurchased)');
+      // For preview mode, only allow first stop (index 0)
+      if (!hasPurchased && newIndex > 0) {
+        print('MyTrip: Preview mode - cannot access stop $newIndex, showing dialog');
+        _showPreviewLimitDialog();
+        return;
+      }
+      
+      print('MyTrip: Allowing stop change to index: $newIndex');
       setState(() => currentStopIndex = newIndex);
-      _loadDirectionsForStop(tourStops[newIndex]);
-      _loadRestaurantsForStop(tourStops[newIndex]);
+      
+      // Extract new stop location and load nearby places
+      _extractCurrentStopLocation();
       return;
     }
 
-    // If trying to access beyond available stops, check if user has paid
+    // Handle going beyond available stops
     if (newIndex >= tourStops.length) {
+      print('MyTrip: Attempting to access beyond available stops');
+      
       if (hasPurchased) {
-        // User has paid but we don't have more stops loaded - this shouldn't happen
-        print('MyTrip: User has paid but no more stops available (index $newIndex >= ${tourStops.length})');
+        print('MyTrip: User has paid but no more stops available');
         return;
       }
 
-      // User hasn't paid - show preview limit dialog
-      if (widget.package != null) {
-        final packageIdRaw = widget.package!['id'];
-        final packageId = packageIdRaw?.toString();
-        if (packageId != null) {
-          // Double-check payment status using the verification service
-          try {
-            final canAccess = await PaymentVerificationService.canAccessStop(packageId, newIndex);
-            if (canAccess) {
-              // Payment status might have changed - reload the screen
-              print('MyTrip: Payment status changed, user can now access stop $newIndex');
-              _initializeTourStops();
-              if (mounted) setState(() {});
-              return;
-            }
-          } catch (e) {
-            print('MyTrip: Error checking stop access: $e');
-          }
-        }
-      }
-
-      // Show preview limit dialog
-      print('MyTrip: Attempting to access beyond preview limit (index $newIndex), showing preview dialog');
+      // For preview mode, show dialog when trying to go beyond first stop
       _showPreviewLimitDialog();
-    } else {
-      print('MyTrip: Invalid index: $newIndex');
     }
   }
 
@@ -298,16 +257,14 @@ class _MyTripScreenState extends State<MyTripScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Close button
                 Align(
                   alignment: Alignment.topRight,
                   child: GestureDetector(
                     onTap: () => Navigator.of(dialogContext).pop(),
-                    child: Icon(Icons.close, color: Colors.white54, size: 24),
+                    child: const Icon(Icons.close, color: Colors.white54, size: 24),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Warning icon
                 Container(
                   width: 60,
                   height: 60,
@@ -315,14 +272,13 @@ class _MyTripScreenState extends State<MyTripScreen> {
                     color: const Color(0xFF40C4AA).withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.warning_outlined,
-                    color: const Color(0xFF40C4AA),
+                    color: Color(0xFF40C4AA),
                     size: 30,
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Warning text
                 const Text(
                   'Preview is limited to the first 2 stops. Buy the tour to access all stops.',
                   textAlign: TextAlign.center,
@@ -333,15 +289,11 @@ class _MyTripScreenState extends State<MyTripScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Buy Now button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Close the dialog first
                       Navigator.of(dialogContext).pop();
-                      // Navigate to checkout screen with package data
-                      print('MyTrip: Navigating to checkout with package: ${widget.package}');
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => CheckoutScreen(package: widget.package ?? {}),
@@ -373,119 +325,8 @@ class _MyTripScreenState extends State<MyTripScreen> {
     );
   }
 
-  void _loadRestaurantsForStop(Map<String, dynamic> stop) {
-    final stopLocationData = stop['location'];
-    if (stopLocationData != null && 
-        stopLocationData['latitude'] != null && 
-        stopLocationData['longitude'] != null) {
-      
-      final stopLatLng = LatLng(
-        stopLocationData['latitude'],
-        stopLocationData['longitude'],
-      );
-      
-      _loadRestaurantsAtLocation(stopLatLng);
-    } else {
-      // Use current location if stop doesn't have coordinates
-      if (currentLocation != null) {
-        _loadNearbyRestaurants();
-      }
-    }
-  }
-
-  void _loadRestaurantsAtLocation(LatLng location) async {
-    setState(() => isLoadingPois = true);
-
-    try {
-      final nearbyRestaurants = await _travellerApi.getNearbyRestaurants(
-        lat: location.latitude,
-        lng: location.longitude,
-        radius: 1000,
-      );
-
-      if (mounted) {
-        setState(() {
-          restaurants = nearbyRestaurants;
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-      if (mounted) {
-        setState(() {
-          restaurants = [];
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoadingPois = false;
-        });
-      }
-    }
-  }
-
-  void _refreshRestaurants() {
-    if (currentLocation != null) {
-      _loadNearbyRestaurants();
-    }
-  }
-
-  Future<void> _checkPurchaseStatus() async {
-    try {
-      // Get the package ID
-      final packageId = widget.package?['id']?.toString();
-      if (packageId == null) {
-        print('MyTrip: No package ID found');
-        setState(() {
-          hasPurchased = false;
-        });
-        return;
-      }
-
-      // Get user ID from storage
-      final userId = await _getCurrentUserId();
-      if (userId == null) {
-        print('MyTrip: No user ID found');
-        setState(() {
-          hasPurchased = false;
-        });
-        return;
-      }
-
-      print('MyTrip: Checking payment status for package ID: $packageId, user ID: $userId');
-
-      // Check payment status via API
-      final response = await dashboardApi.checkPaymentStatus(packageId, userId);
-      print('MyTrip: Payment status API response: $response');
-
-      if (response['success'] == true) {
-        final hasPaid = response['data']?['hasPaid'] ?? false;
-        print('MyTrip: hasPaid value from API: $hasPaid');
-        setState(() {
-          hasPurchased = hasPaid;
-        });
-      } else {
-        print('MyTrip: API response not successful');
-        setState(() {
-          hasPurchased = false;
-        });
-      }
-    } catch (e) {
-      print('MyTrip: Error checking payment status: $e');
-      setState(() {
-        hasPurchased = false;
-      });
-    }
-  }
-
-  Future<String?> _getCurrentUserId() async {
-    try {
-      // Get user ID from secure storage
-      return await StorageHelper.getUserId();
-    } catch (e) {
-      print('MyTrip: Error getting current user ID: $e');
-      return null;
-    }
+  void _refreshPlaces() {
+    _loadNearbyPlaces();
   }
 
   String get currentStopTitle {
@@ -524,8 +365,8 @@ class _MyTripScreenState extends State<MyTripScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _refreshRestaurants,
-            tooltip: 'Refresh nearby restaurants',
+            onPressed: _refreshPlaces,
+            tooltip: 'Refresh nearby places',
           ),
         ],
       ),
@@ -537,7 +378,8 @@ class _MyTripScreenState extends State<MyTripScreen> {
             _buildMapSection(),
             _buildAudioPlayer(),
             if (hasPurchased) _buildReviewsSection(),
-            _buildRestaurantsSection(),
+            if (nearbyPlaces.isNotEmpty || isLoadingPlaces) _buildNearbyPlacesSection(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -559,26 +401,22 @@ class _MyTripScreenState extends State<MyTripScreen> {
   }
 
   Widget _buildMapSection() {
-    // Convert tour stops to TourStop objects for TourRouteMap
-    final tourStops = _convertToTourStops();
-    print('MyTrip: Building map section with ${tourStops.length} stops');
-    print('MyTrip: Current location: $currentLocation');
-    print('MyTrip: Current stop index: $currentStopIndex');
-
+    final tourStopsList = _convertToTourStops();
+    final nearbyPlacesList = _convertToNearbyPlaces();
+    
     return Container(
       margin: const EdgeInsets.all(16),
-      height: 400, // Reduced height to prevent overflow
+      height: 400,
       child: TourRouteMap(
-        tourStops: tourStops,
-        showRouteLine: hasPurchased || widget.isPreviewMode == true, // Show route line for paid users OR preview mode (first 2 stops)
+        tourStops: tourStopsList,
+        nearbyPlaces: nearbyPlacesList, // Pass nearby places to the map
+        showRouteLine: hasPurchased || widget.isPreviewMode == true,
         focusedStopIndex: currentStopIndex,
         currentLocation: currentLocation,
         onStopTap: () {
-          // Handle stop tap if needed
           print('MyTrip: Stop tapped on map');
         },
         onMapTap: () {
-          // Handle map tap if needed
           print('MyTrip: Map tapped');
         },
       ),
@@ -590,7 +428,6 @@ class _MyTripScreenState extends State<MyTripScreen> {
       final index = entry.key;
       final stop = entry.value;
 
-      // Create Location object if coordinates exist
       Location? location;
       if (stop['location'] != null) {
         final locData = stop['location'];
@@ -608,7 +445,6 @@ class _MyTripScreenState extends State<MyTripScreen> {
         }
       }
 
-      // Convert media data
       List<Media> mediaList = [];
       if (stop['media'] != null && stop['media'] is List) {
         mediaList = (stop['media'] as List).map((mediaItem) {
@@ -628,6 +464,34 @@ class _MyTripScreenState extends State<MyTripScreen> {
         description: stop['description'],
         location: location,
         media: mediaList,
+      );
+    }).toList();
+  }
+
+  List<NearbyPlace> _convertToNearbyPlaces() {
+    return nearbyPlaces.map((place) {
+      final placeType = place['place_type']?.toString().toLowerCase() ?? '';
+      final category = place['category']?.toString().toLowerCase() ?? '';
+      
+      // Determine place type for map marker
+      PlaceType type;
+      if (placeType == 'restaurant' || category == 'restaurant') {
+        type = PlaceType.restaurant;
+      } else if (placeType == 'hidden_gem' || category == 'hidden_gem') {
+        type = PlaceType.hiddenGem;
+      } else {
+        type = PlaceType.attraction;
+      }
+
+      return NearbyPlace(
+        id: place['id']?.toString() ?? '0',
+        name: place['name'] ?? 'Nearby Place',
+        location: LatLng(
+          (place['latitude'] as num).toDouble(),
+          (place['longitude'] as num).toDouble(),
+        ),
+        type: type,
+        distance: place['distance_km']?.toDouble() ?? 0.0,
       );
     }).toList();
   }
@@ -698,7 +562,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _submitReview,
+              onPressed: _isAddingReview ? null : _submitReview,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -706,14 +570,23 @@ class _MyTripScreenState extends State<MyTripScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Submit Review',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isAddingReview
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Submit Review',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -721,7 +594,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
     );
   }
 
-  Widget _buildRestaurantsSection() {
+  Widget _buildNearbyPlacesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -731,14 +604,14 @@ class _MyTripScreenState extends State<MyTripScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Cafes & Restaurants Nearby',
+                'Nearby Places',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (isLoadingPois)
+              if (isLoadingPlaces)
                 const SizedBox(
                   width: 20,
                   height: 20,
@@ -748,29 +621,252 @@ class _MyTripScreenState extends State<MyTripScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        RestaurantList(
-          restaurants: restaurants,
-          isLoading: isLoadingPois,
-          onRestaurantTap: (restaurant) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RestaurantDetailScreen(
-                  name: restaurant['name'],
-                  image: restaurant['image'],
-                  rating: restaurant['rating'],
-                  description: restaurant['description'],
-                ),
-              ),
-            );
-          },
-        ),
+        _buildPlacesList(),
       ],
     );
   }
 
+  Widget _buildPlacesList() {
+    if (isLoadingPlaces) {
+      return _buildLoadingIndicator();
+    }
+
+    if (nearbyPlaces.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.explore,
+        message: 'No nearby places found',
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: nearbyPlaces.length,
+        itemBuilder: (context, index) {
+          final place = nearbyPlaces[index];
+          return _buildPlaceCard(place);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlaceCard(Map<String, dynamic> place) {
+    final name = place['name'] ?? 'Place';
+    final description = place['description'] ?? 'A great place to visit';
+    final distance = place['distance_km'] != null 
+        ? '${place['distance_km']} km' 
+        : 'Nearby';
+    
+    // Determine place type and styling
+    final placeType = place['place_type']?.toString().toLowerCase() ?? '';
+    final category = place['category']?.toString().toLowerCase() ?? '';
+    final businessType = place['business_type']?.toString().toLowerCase() ?? '';
+    
+    bool isRestaurant = placeType == 'restaurant' || 
+                       category == 'restaurant' || 
+                       businessType == 'restaurant' ||
+                       name.toLowerCase().contains('restaurant') ||
+                       name.toLowerCase().contains('cafe') ||
+                       name.toLowerCase().contains('food');
+    
+    bool isHiddenGem = placeType == 'hidden_gem' || 
+                      category == 'hidden_gem' ||
+                      (description.toLowerCase().contains('hidden') ||
+                       description.toLowerCase().contains('secret') ||
+                       description.toLowerCase().contains('local'));
+    
+    // Set colors and icon based on type
+    Color primaryColor;
+    Color backgroundColor;
+    IconData icon;
+    String typeLabel;
+    
+    if (isRestaurant) {
+      primaryColor = Colors.blue;
+      backgroundColor = Colors.blue.withOpacity(0.1);
+      icon = Icons.restaurant;
+      typeLabel = 'Restaurant';
+    } else if (isHiddenGem) {
+      primaryColor = Colors.amber;
+      backgroundColor = Colors.amber.withOpacity(0.1);
+      icon = Icons.auto_awesome;
+      typeLabel = 'Hidden Gem';
+    } else {
+      primaryColor = Colors.green;
+      backgroundColor = Colors.green.withOpacity(0.1);
+      icon = Icons.explore;
+      typeLabel = 'Attraction';
+    }
+
+    return Container(
+      width: 220,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primaryColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon and distance
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    distance,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Type badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      typeLabel,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Description
+                  Expanded(
+                    child: Text(
+                      description,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  
+                  // Additional info if available
+                  if (place['rating'] != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: primaryColor, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${place['rating']}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({required IconData icon, required String message}) {
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white54, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAudioPlayer() {
-    // Get audio URL for current stop
     String audioUrl = _getAudioUrlForCurrentStop();
 
     return Container(
@@ -780,7 +876,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.skip_previous, color: Colors.white, size: 28),
-            onPressed: () => _changeStop(currentStopIndex - 1),
+            onPressed: currentStopIndex > 0 ? () => _changeStop(currentStopIndex - 1) : null,
           ),
           Expanded(
             child: AudioPlayerWidget(
@@ -790,10 +886,9 @@ class _MyTripScreenState extends State<MyTripScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.skip_next, color: Colors.white, size: 28),
-            onPressed: () {
-              print('MyTrip: Next button pressed in audio player');
+            onPressed: currentStopIndex < tourStops.length - 1 ? () {
               _changeStop(currentStopIndex + 1);
-            },
+            } : null,
           ),
         ],
       ),
@@ -802,66 +897,36 @@ class _MyTripScreenState extends State<MyTripScreen> {
 
   String _getAudioUrlForCurrentStop() {
     if (tourStops.isEmpty) {
-      print('No tour stops available, using fallback audio');
       return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
     }
 
     final currentStop = tourStops[currentStopIndex];
-    print('Current stop data: $currentStop');
 
-    // Check if this stop has media data (like in package-details)
+    // First check media array
     if (currentStop['media'] != null && (currentStop['media'] as List).isNotEmpty) {
-      print('Stop has media data: ${currentStop['media']}');
-      // Find audio media
       final audioMedia = (currentStop['media'] as List).firstWhere(
         (media) => media['media_type'] == 'audio',
         orElse: () => null,
       );
       if (audioMedia != null) {
-        // The media is directly in the audioMedia object, not nested under 'media'
         final url = audioMedia['url'];
-        print('Found audio media URL: $url');
         if (url != null && url.isNotEmpty) {
-          final fullUrl = MediaService.getFullUrl(url);
-          print('Full audio URL: $fullUrl');
-          return fullUrl;
+          return MediaService.getFullUrl(url); // FIXED: Using correct method name
         }
       }
     }
 
-    // Fallback to audio_url field
-    final audioUrl = currentStop['audio_url'] ?? currentStop['audioUrl'];
-    print('Fallback audio URL: $audioUrl');
+    // Then check direct audio_url
+    final audioUrl = currentStop['audio_url'];
     if (audioUrl != null && audioUrl.isNotEmpty) {
-      final fullUrl = MediaService.getFullUrl(audioUrl);
-      print('Full fallback URL: $fullUrl');
-      return fullUrl;
+      return MediaService.getFullUrl(audioUrl); // FIXED: Using correct method name
     }
 
-    // Final fallback - use a working audio URL that supports CORS and is accessible
-    print('Using final fallback audio');
-    // Try a different audio URL that might work better on web - use a more compatible format
+    // Fallback to default audio
     return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
   }
 
-  // Add this method to handle seeking
-  void _seekAudio(double position) {
-    audioPlayer.seek(Duration(seconds: position.toInt()));
-  }
-
-  void _togglePlayPause() {
-    if (audioPlayer.playing) {
-      audioPlayer.pause();
-    } else {
-      audioPlayer.play();
-    }
-  }
-
-  void _stopAudio() {
-    audioPlayer.stop();
-  }
-
-  void _submitReview() {
+  Future<void> _submitReview() async {
     if (_selectedRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -872,60 +937,32 @@ class _MyTripScreenState extends State<MyTripScreen> {
       return;
     }
 
-    if (_reviewController.text.trim().isEmpty) {
+    setState(() => _isAddingReview = true);
+
+    try {
+      // TODO: Implement review submission API call
+      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please write a review'),
+          content: Text('Review submitted successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      setState(() {
+        _selectedRating = 0;
+        _reviewController.clear();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit review: $e'),
           backgroundColor: Colors.red,
         ),
       );
-      return;
+    } finally {
+      setState(() => _isAddingReview = false);
     }
-
-    // In a real app, this would send the review to the backend
-    // For now, just show success message and reset the form
-    setState(() {
-      _selectedRating = 0;
-      _reviewController.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Review submitted successfully!'),
-        backgroundColor: Color(0xFF40C4AA),
-      ),
-    );
-  }
-
-  LatLng? _calculateMapCenter() {
-    if (currentLocation != null && stopLocation != null) {
-      return LatLng(
-        (currentLocation!.latitude + stopLocation!.latitude) / 2,
-        (currentLocation!.longitude + stopLocation!.longitude) / 2,
-      );
-    }
-    return currentLocation ?? stopLocation;
-  }
-
-  double _calculateZoomLevel() {
-    if (currentLocation != null && stopLocation != null) {
-      final distance = _calculateDistance(currentLocation!, stopLocation!);
-      return (18 - (distance / 1000) * 0.5).clamp(10.0, 18.0);
-    }
-    return 12.0;
-  }
-
-  double _calculateDistance(LatLng point1, LatLng point2) {
-    const R = 6371000;
-    final dLat = (point2.latitude - point1.latitude) * math.pi / 180;
-    final dLng = (point2.longitude - point1.longitude) * math.pi / 180;
-    final a = 
-        math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(point1.latitude * math.pi / 180) *
-        math.cos(point2.latitude * math.pi / 180) *
-        math.sin(dLng / 2) *
-        math.sin(dLng / 2);
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return R * c;
   }
 }

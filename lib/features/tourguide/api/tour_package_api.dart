@@ -18,7 +18,7 @@ class TourPackageApi {
   }) async {
     try {
       // Get guide ID from current user
-      final guideId = await _getGuideId();
+      final guideId = await getGuideId();
       
       if (guideId == null) {
         return {
@@ -60,7 +60,7 @@ class TourPackageApi {
   }
 
   // Helper method to get guide ID
-  Future<int?> _getGuideId() async {
+  Future<int?> getGuideId() async {
     try {
 
       final userId = await AuthApi.getUserId();

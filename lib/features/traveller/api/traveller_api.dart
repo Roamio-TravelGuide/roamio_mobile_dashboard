@@ -504,5 +504,98 @@ Future<Map<String, dynamic>> getNearbyPois(double latitude, double longitude, {d
       return {'success': false, 'data': null, 'message': error.toString()};
     }
   }
+
+Future<Map<String, dynamic>> getHiddenGemById(int hiddenGemId) async {
+  try {
+    final response = await apiClient.get('/hiddenGem/$hiddenGemId');
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else if (response.statusCode == 404) {
+      throw Exception('Hidden gem not found');
+    } else {
+      throw Exception('Failed to load hidden gem: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching hidden gem: $error');
+    rethrow;
+  }
+}
+
+Future<Map<String, dynamic>> getMyHiddenGems({
+  required String travelerId, // Add this parameter
+  String status = 'all',
+  int page = 1,
+  int limit = 10,
+}) async {
+  try {
+    final Map<String, String> queryParams = {
+      'status': status,
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+
+    final response = await apiClient.get(
+      '/hiddenGem/traveler/${travelerId}',
+      queryParameters: queryParams,
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to load my hidden gems: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching my hidden gems: $error');
+    rethrow;
+  }
+}
+
+Future<Map<String, dynamic>> deleteHiddenGem(int hiddenGemId) async {
+  try {
+    final response = await apiClient.delete('/hiddenGem/$hiddenGemId');
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      return responseBody;
+    } else {
+      throw Exception('Failed to delete hidden gem: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error deleting hidden gem: $error');
+    rethrow;
+  }
+}
+
+Future<Map<String, dynamic>> getMyHiddenGemsStats({required String travelerId}) async {
+  try {
+    final response = await apiClient.get('/hiddenGem/traveler/$travelerId/stats');
+
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      if (responseBody is Map<String, dynamic>) {
+        return responseBody;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to load my hidden gems stats: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error fetching my hidden gems stats: $error');
+    rethrow;
+  }
+}
+
 }
 

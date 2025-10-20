@@ -24,6 +24,8 @@ import '../features/traveller/presentation/screens/profile_screen.dart';
 import '../features/traveller/presentation/screens/favorites_screen.dart';
 import '../core/widgets/bottom_navigation.dart';
 
+import '../features/traveller/presentation/screens/hidden_gems_list_screen.dart';
+
 class AppRoutes {
   // Auth routes
   static const String login = '/login';
@@ -162,7 +164,7 @@ final GoRouter appRouter = GoRouter(
               case AppRoutes.travelerMyTrips:
                 return const MyTrips(); // Keep original traveler class
               case AppRoutes.travelerFavorites:
-                return const FavoritesScreen();
+                return const HiddenGemsListScreen();
               case AppRoutes.travelerProfile:
                 return const TravelerProfilePage();
               case AppRoutes.addHiddenPage:
