@@ -1,4 +1,3 @@
-import 'package:Roamio/core/config/env_config.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -13,6 +12,8 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/media_service.dart';
 import 'package-details.dart';
+import '../../api/traveller_api.dart';
+import '../../../../core/config/env_config.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,14 +25,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String searchQuery = '';
   FilterOptions filterOptions = FilterOptions();
-  String userName = 'Unknown Guest';
+  String userName = 'Explorer';
   String profilePictureUrl = '';
   
   // API client and state management
   late DashboardApi dashboardApi;
   late final ApiClient apiClient;
   
-  // Separate loading states for better UX
+  // Loading states
   bool isLoading = true;
   bool isLoadingLocation = false;
   bool isLoadingNearby = false;
@@ -46,12 +47,6 @@ class _HomePageState extends State<HomePage> {
   List<Destination> recentTours = [];
   List<Destination> trendingTours = [];
   List<Destination> recommendedTours = [];
-
-  // Raw package data for navigation
-  List<Map<String, dynamic>> nearbyPackages = [];
-  List<Map<String, dynamic>> recentPackages = [];
-  List<Map<String, dynamic>> trendingPackages = [];
-  List<Map<String, dynamic>> recommendedPackages = [];
 
   // Location
   LatLng? _currentLocation;
@@ -68,7 +63,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      userName = prefs.getString('userName') ?? 'Guest';
+      userName = prefs.getString('userName') ?? 'Explorer';
       profilePictureUrl = prefs.getString('profilePictureUrl') ?? '';
     });
   }
@@ -124,7 +119,6 @@ class _HomePageState extends State<HomePage> {
     if (_currentLocation == null) {
       setState(() {
         nearbyTours = [];
-        nearbyPackages = [];
         isLoadingNearby = false;
       });
       return;
@@ -145,7 +139,6 @@ class _HomePageState extends State<HomePage> {
         final tours = _convertApiResponseToDestinations(rawData);
         setState(() {
           nearbyTours = tours;
-          nearbyPackages = List<Map<String, dynamic>>.from(rawData);
         });
       }
     } catch (error) {
@@ -165,7 +158,6 @@ class _HomePageState extends State<HomePage> {
         final tours = _convertApiResponseToDestinations(rawData);
         setState(() {
           recentTours = tours;
-          recentPackages = List<Map<String, dynamic>>.from(rawData);
         });
       }
     } catch (error) {
@@ -185,7 +177,6 @@ class _HomePageState extends State<HomePage> {
         final tours = _convertApiResponseToDestinations(rawData);
         setState(() {
           trendingTours = tours;
-          trendingPackages = List<Map<String, dynamic>>.from(rawData);
         });
       }
     } catch (error) {
@@ -205,7 +196,6 @@ class _HomePageState extends State<HomePage> {
         final tours = _convertApiResponseToDestinations(rawData);
         setState(() {
           recommendedTours = tours;
-          recommendedPackages = List<Map<String, dynamic>>.from(rawData);
         });
       }
     } catch (error) {
@@ -251,17 +241,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleDestinationTap(Destination destination) {
-    // Always fetch complete package data from API to ensure we have all tour stops
-    _fetchAndNavigateToPackageDetails(destination.id);
+    _navigateToPackageDetails(destination.id);
   }
 
-  Future<void> _fetchAndNavigateToPackageDetails(String packageId) async {
+  Future<void> _navigateToPackageDetails(String packageId) async {
     try {
-      final response = await dashboardApi.getPackageById(packageId);
+      final travellerApi = TravellerApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
+      final response = await travellerApi.getTourPackageById(int.parse(packageId));
+      
       if (response['success'] == true && response['data'] != null) {
-        final packageData = response['data'];
-        print('HomePage: Fetched package data with ${packageData['tour_stops']?.length ?? 0} stops');
-
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -270,23 +258,20 @@ class _HomePageState extends State<HomePage> {
                 scaffoldBackgroundColor: const Color(0xFF0D0D12),
                 canvasColor: const Color(0xFF0D0D12),
               ),
-              child: DestinationDetailsPage(package: packageData),
+              child: DestinationDetailsPage(package: response['data']),
             ),
           ),
         );
       } else {
-        print('HomePage: API call failed or returned no data');
-        // Fallback to basic package data if API call fails
-        _navigateWithBasicData(packageId);
+        _navigateWithFallback(packageId);
       }
     } catch (e) {
-      print('HomePage: Error fetching package details: $e');
-      _navigateWithBasicData(packageId);
+      print('Error fetching package: $e');
+      _navigateWithFallback(packageId);
     }
   }
 
-  void _navigateWithBasicData(String packageId) {
-    // Create basic package data as fallback
+  void _navigateWithFallback(String packageId) {
     final basicPackage = {
       'id': packageId,
       'title': 'Package Details',
@@ -349,39 +334,40 @@ class _HomePageState extends State<HomePage> {
           onRefresh: () async => _refreshData(),
           child: CustomScrollView(
             slivers: [
-              // Header Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Where do you want to explore today?',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildSearchFilterRow(),
-                      const SizedBox(height: 8),
-                      if (filterOptions.hasActiveFilters) _buildActiveFilters(),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Main Content
+              _buildHeaderSliver(),
               if (isLoading) _buildLoadingSliver(),
               if (errorMessage.isNotEmpty && _hasNoTours()) _buildErrorSliver(),
               if (_hasNoTours() && !isLoading) _buildEmptySliver(),
               if (!isLoading && !_hasNoTours()) _buildContentSlivers(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildHeaderSliver() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            const Text(
+              'Where do you want to explore today?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSearchFilterRow(),
+            const SizedBox(height: 8),
+            if (filterOptions.hasActiveFilters) _buildActiveFilters(),
+          ],
         ),
       ),
     );
@@ -523,117 +509,115 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // In your home_page.dart, update the _buildContentSlivers method:
-
-SliverList _buildContentSlivers() {
-  return SliverList(
-    delegate: SliverChildListDelegate([
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Nearby Tours Section - Use Standard Cards
-            if (nearbyTours.isNotEmpty && _currentLocation != null) ...[
-              _buildSectionHeader(
-                Icons.near_me,
-                'Tours Near You',
-                'Based on your current location',
-                isLoadingNearby,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 320,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: nearbyTours.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 16),
-                  itemBuilder: (context, index) {
-                    final tour = nearbyTours[index];
-                    return SizedBox(
-                      width: 300,
-                      child: DestinationCard(
-                        destination: tour,
-                        onTap: () => _handleDestinationTap(tour),
-                        cardType: CardType.standard,
-                      ),
-                    );
-                  },
+  SliverList _buildContentSlivers() {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Nearby Tours Section
+              if (nearbyTours.isNotEmpty && _currentLocation != null) ...[
+                _buildSectionHeader(
+                  Icons.near_me,
+                  'Tours Near You',
+                  'Based on your current location',
+                  isLoadingNearby,
                 ),
-              ),
-              const SizedBox(height: 32),
-            ],
-
-            // Recent Tours Section - Use Horizontal Cards
-            if (recentTours.isNotEmpty) ...[
-              _buildSectionHeader(
-                Icons.access_time_filled,
-                'Recent Tours',
-                'Latest additions to our collection',
-                isLoadingRecent,
-              ),
-              const SizedBox(height: 16),
-              ...recentTours.map((tour) => DestinationCard(
-                destination: tour,
-                onTap: () => _handleDestinationTap(tour),
-                cardType: CardType.horizontal,
-              )).toList(),
-              const SizedBox(height: 32),
-            ],
-
-            // Trending Tours Section - Use Compact Cards
-            if (trendingTours.isNotEmpty) ...[
-              _buildSectionHeader(
-                Icons.trending_up_rounded,
-                'Trending Now',
-                'Most popular tours this week',
-                isLoadingTrending,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 180,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: trendingTours.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final tour = trendingTours[index];
-                    return DestinationCard(
-                      destination: tour,
-                      onTap: () => _handleDestinationTap(tour),
-                      cardType: CardType.compact,
-                    );
-                  },
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 320,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: nearbyTours.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 16),
+                    itemBuilder: (context, index) {
+                      final tour = nearbyTours[index];
+                      return SizedBox(
+                        width: 300,
+                        child: DestinationCard(
+                          destination: tour,
+                          onTap: () => _handleDestinationTap(tour),
+                          cardType: CardType.standard,
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
 
-            // Recommended Tours Section - Use Standard Cards
-            if (recommendedTours.isNotEmpty) ...[
-              _buildSectionHeader(
-                Icons.star_rounded,
-                'Recommended For You',
-                'Curated based on your preferences',
-                isLoadingRecommended,
-              ),
-              const SizedBox(height: 16),
-              ...recommendedTours.map((tour) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: DestinationCard(
+              // Recent Tours Section
+              if (recentTours.isNotEmpty) ...[
+                _buildSectionHeader(
+                  Icons.access_time_filled,
+                  'Recent Tours',
+                  'Latest additions to our collection',
+                  isLoadingRecent,
+                ),
+                const SizedBox(height: 16),
+                ...recentTours.map((tour) => DestinationCard(
                   destination: tour,
                   onTap: () => _handleDestinationTap(tour),
-                  cardType: CardType.standard,
+                  cardType: CardType.horizontal,
+                )).toList(),
+                const SizedBox(height: 32),
+              ],
+
+              // Trending Tours Section
+              if (trendingTours.isNotEmpty) ...[
+                _buildSectionHeader(
+                  Icons.trending_up_rounded,
+                  'Trending Now',
+                  'Most popular tours this week',
+                  isLoadingTrending,
                 ),
-              )).toList(),
-              const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 180,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: trendingTours.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final tour = trendingTours[index];
+                      return DestinationCard(
+                        destination: tour,
+                        onTap: () => _handleDestinationTap(tour),
+                        cardType: CardType.compact,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+
+              // Recommended Tours Section
+              if (recommendedTours.isNotEmpty) ...[
+                _buildSectionHeader(
+                  Icons.star_rounded,
+                  'Recommended For You',
+                  'Curated based on your preferences',
+                  isLoadingRecommended,
+                ),
+                const SizedBox(height: 16),
+                ...recommendedTours.map((tour) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: DestinationCard(
+                    destination: tour,
+                    onTap: () => _handleDestinationTap(tour),
+                    cardType: CardType.standard,
+                  ),
+                )).toList(),
+                const SizedBox(height: 20),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-    ]),
-  );
-}
+      ]),
+    );
+  }
 
   Widget _buildSectionHeader(IconData icon, String title, String subtitle, bool isLoading) {
     return Column(

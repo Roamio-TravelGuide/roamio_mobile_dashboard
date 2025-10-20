@@ -48,7 +48,7 @@ class DashboardApi {
           'limit': limit.toString(),
         },
       );
-      
+
       return _parseResponse(response);
     } catch (error) {
       print('Error fetching nearby packages: $error');
@@ -492,4 +492,39 @@ class DashboardApi {
       return {'success': false, 'message': error.toString()};
     }
   }
+
+Future<Map<String, dynamic>> getNearbyPlaces({
+  required double latitude,
+  required double longitude,
+  required int radius,
+}) async {
+  try {
+    print('🚀 API CALL: Getting nearby places');
+    print('📍 Latitude: $latitude, Longitude: $longitude, Radius: ${radius}km');
+    print('🔗 Endpoint: /traveller/nearby-places');
+    
+    final response = await apiClient.get(
+      '/traveller/nearby-places',
+      queryParameters: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'radius': radius.toString(),
+      },
+    );
+    
+    print('✅ API RESPONSE SUCCESS:');
+    print('📦 Response Type: ${response.runtimeType}');
+    print('📦 Response Data: $response');
+    
+    return _parseResponse(response);
+  } catch (e) {
+    print('❌ API ERROR: $e');
+    return {
+      'success': false, 
+      'error': e.toString(),
+      'data': []
+    };
+  }
+}
+
 }

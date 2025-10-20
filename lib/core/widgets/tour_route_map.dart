@@ -8,6 +8,7 @@ import '../../services/mapbox_route_service.dart';
 
 class TourRouteMap extends StatefulWidget {
   final List<TourStop> tourStops;
+  final List<NearbyPlace>? nearbyPlaces; // Add this parameter
   final bool showRouteLine;
   final int? focusedStopIndex;
   final LatLng? currentLocation;
@@ -17,6 +18,7 @@ class TourRouteMap extends StatefulWidget {
   const TourRouteMap({
     super.key,
     required this.tourStops,
+    this.nearbyPlaces, // Add this parameter
     this.showRouteLine = true,
     this.focusedStopIndex,
     this.currentLocation,
@@ -301,6 +303,108 @@ class _TourRouteMapState extends State<TourRouteMap> {
 
     return markers;
   }
+  
+
+  List<Marker> _buildNearbyPlaceMarkers() {
+  if (widget.nearbyPlaces == null || widget.nearbyPlaces!.isEmpty) {
+    return [];
+  }
+
+  return widget.nearbyPlaces!.map((place) {
+    Color markerColor;
+    IconData markerIcon;
+    String typeLabel;
+
+    switch (place.type) {
+      case PlaceType.restaurant:
+        markerColor = Colors.blue;
+        markerIcon = Icons.restaurant;
+        typeLabel = 'Restaurant';
+        break;
+      case PlaceType.hiddenGem:
+        markerColor = Colors.amber;
+        markerIcon = Icons.auto_awesome;
+        typeLabel = 'Hidden Gem';
+        break;
+      case PlaceType.attraction:
+      default:
+        markerColor = Colors.green;
+        markerIcon = Icons.explore;
+        typeLabel = 'Attraction';
+    }
+
+    return Marker(
+      point: place.location,
+      width: 45.0, // Reduced width
+      height: 45.0, // Reduced height
+      child: GestureDetector(
+        onTap: () {
+          // You can add specific behavior for nearby place taps here
+          _mapController.move(place.location, 15.0);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Type label above marker
+            Container(
+              constraints: const BoxConstraints(maxWidth: 80), // Reduced max width
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), // Reduced padding
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(2), // Smaller border radius
+              ),
+              child: Text(
+                typeLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 7, // Smaller font
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 1), // Reduced spacing
+            // Nearby place marker
+            Container(
+              width: 20, // Smaller marker
+              height: 20, // Smaller marker
+              decoration: BoxDecoration(
+                color: markerColor.withOpacity(0.9),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.0), // Thinner border
+              ),
+              child: Icon(
+                markerIcon,
+                color: Colors.white,
+                size: 10, // Smaller icon
+              ),
+            ),
+            const SizedBox(height: 1), // Reduced spacing
+            // Distance label below marker
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0), // Reduced padding
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(1), // Smaller border radius
+              ),
+              child: Text(
+                '${place.distance.toStringAsFixed(1)}km',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 6, // Smaller font
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }).toList();
+}
 
   Widget _buildStopMarker(int stopNumber, bool isFocused, bool isStart, bool isEnd) {
     // Use brown color for all stops in preview mode, red only for the actual last stop
@@ -362,6 +466,10 @@ class _TourRouteMapState extends State<TourRouteMap> {
               if (_currentToStopPolylines.isNotEmpty)
                 PolylineLayer(polylines: _currentToStopPolylines),
 
+              // Add nearby places markers layer
+              MarkerLayer(markers: _buildNearbyPlaceMarkers()),
+
+              // Add tour stop markers layer (on top of nearby places)
               MarkerLayer(markers: _buildStopMarkers()),
             ],
           ),
@@ -411,6 +519,8 @@ class _TourRouteMapState extends State<TourRouteMap> {
             Text('Stops: ${validStops.length}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
             Text('Distance: ${(distance / 1000).toStringAsFixed(1)} km', style: const TextStyle(color: Colors.white70, fontSize: 12)),
             Text('Walking time: ${_formatDuration(duration.toInt())}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            if (widget.nearbyPlaces != null && widget.nearbyPlaces!.isNotEmpty)
+              Text('Nearby Places: ${widget.nearbyPlaces!.length}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
           ],
         ),
       ),
@@ -460,4 +570,27 @@ class _TourRouteMapState extends State<TourRouteMap> {
     _mapController.dispose();
     super.dispose();
   }
+}
+
+// Add these model classes at the bottom of the file
+class NearbyPlace {
+  final String id;
+  final String name;
+  final LatLng location;
+  final PlaceType type;
+  final double distance;
+
+  NearbyPlace({
+    required this.id,
+    required this.name,
+    required this.location,
+    required this.type,
+    required this.distance,
+  });
+}
+
+enum PlaceType {
+  restaurant,
+  hiddenGem,
+  attraction,
 }
