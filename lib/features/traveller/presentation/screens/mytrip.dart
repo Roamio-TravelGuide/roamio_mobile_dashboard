@@ -12,6 +12,7 @@ import '../../../../core/utils/storage_helper.dart';
 import '../../../../core/services/payment_verification_service.dart';
 import '../../../../core/config/env_config.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/services/location_service.dart';
 
 class MyTripScreen extends StatefulWidget {
   final Map<String, dynamic>? stop;
@@ -149,13 +150,31 @@ class _MyTripScreenState extends State<MyTripScreen> {
   }
 
   void _initializeLocation() async {
-    print('MyTrip: Initializing location...');
-    // Note: LocationService.getCurrentLatLng() should be implemented
-    // For now, set a default location
+  print('MyTrip: Initializing location...');
+  
+  try {
+    final location = await LocationService.getCurrentLatLng();
+    
+    if (location != null && mounted) {
+      print('MyTrip: Current location obtained: ${location.latitude}, ${location.longitude}');
+      setState(() {
+        currentLocation = location;
+      });
+    } else {
+      print('MyTrip: Failed to get current location, using default');
+      // Fallback to default location if current location can't be obtained
+      setState(() {
+        currentLocation = const LatLng(6.9271, 79.8612); // Colombo coordinates as fallback
+      });
+    }
+  } catch (e) {
+    print('MyTrip: Error getting current location: $e');
+    // Fallback to default location on error
     setState(() {
-      currentLocation = const LatLng(6.9271, 79.8612); // Colombo coordinates
+      currentLocation = const LatLng(6.9271, 79.8612); // Colombo coordinates as fallback
     });
   }
+}
 
   Future<void> _loadNearbyPlaces() async {
     if (currentStopLocation == null) {
@@ -638,21 +657,115 @@ class _MyTripScreenState extends State<MyTripScreen> {
       );
     }
 
-    return SizedBox(
-      height: 180,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: nearbyPlaces.length,
-        itemBuilder: (context, index) {
-          final place = nearbyPlaces[index];
-          return _buildPlaceCard(place);
-        },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: nearbyPlaces.map((place) {
+          return _buildPlaceChip(place);
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildPlaceCard(Map<String, dynamic> place) {
+  Widget _buildPlaceChip(Map<String, dynamic> place) {
+    final name = place['name'] ?? 'Place';
+    final distance = place['distance_km'] != null 
+        ? '${place['distance_km']} km' 
+        : 'Nearby';
+    
+    // Determine place type and styling
+    final placeType = place['place_type']?.toString().toLowerCase() ?? '';
+    final category = place['category']?.toString().toLowerCase() ?? '';
+    final businessType = place['business_type']?.toString().toLowerCase() ?? '';
+    
+    bool isRestaurant = placeType == 'restaurant' || 
+                       category == 'restaurant' || 
+                       businessType == 'restaurant' ||
+                       name.toLowerCase().contains('restaurant') ||
+                       name.toLowerCase().contains('cafe') ||
+                       name.toLowerCase().contains('food');
+    
+    bool isHiddenGem = placeType == 'hidden_gem' || 
+                      category == 'hidden_gem' ||
+                      (name.toLowerCase().contains('hidden') ||
+                       name.toLowerCase().contains('secret') ||
+                       name.toLowerCase().contains('local'));
+    
+    // Set colors and icon based on type
+    Color primaryColor;
+    IconData icon;
+    String typeLabel;
+    
+    if (isRestaurant) {
+      primaryColor = Colors.blue;
+      icon = Icons.restaurant;
+      typeLabel = 'Restaurant';
+    } else if (isHiddenGem) {
+      primaryColor = Colors.amber;
+      icon = Icons.auto_awesome;
+      typeLabel = 'Hidden Gem';
+    } else {
+      primaryColor = Colors.green;
+      icon = Icons.explore;
+      typeLabel = 'Attraction';
+    }
+
+    return GestureDetector(
+      onTap: () {
+        _showPlaceDetails(place);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: primaryColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 14),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                distance,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPlaceDetails(Map<String, dynamic> place) {
     final name = place['name'] ?? 'Place';
     final description = place['description'] ?? 'A great place to visit';
     final distance = place['distance_km'] != null 
@@ -673,181 +786,223 @@ class _MyTripScreenState extends State<MyTripScreen> {
     
     bool isHiddenGem = placeType == 'hidden_gem' || 
                       category == 'hidden_gem' ||
-                      (description.toLowerCase().contains('hidden') ||
-                       description.toLowerCase().contains('secret') ||
-                       description.toLowerCase().contains('local'));
+                      (name.toLowerCase().contains('hidden') ||
+                       name.toLowerCase().contains('secret') ||
+                       name.toLowerCase().contains('local'));
     
     // Set colors and icon based on type
     Color primaryColor;
-    Color backgroundColor;
     IconData icon;
     String typeLabel;
     
     if (isRestaurant) {
       primaryColor = Colors.blue;
-      backgroundColor = Colors.blue.withOpacity(0.1);
       icon = Icons.restaurant;
       typeLabel = 'Restaurant';
     } else if (isHiddenGem) {
       primaryColor = Colors.amber;
-      backgroundColor = Colors.amber.withOpacity(0.1);
       icon = Icons.auto_awesome;
       typeLabel = 'Hidden Gem';
     } else {
       primaryColor = Colors.green;
-      backgroundColor = Colors.green.withOpacity(0.1);
       icon = Icons.explore;
       typeLabel = 'Attraction';
     }
 
-    return Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryColor.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with icon and distance
-          Container(
-            padding: const EdgeInsets.all(12),
+    // Get image URL
+    String? imageUrl;
+    if (place['cover_image'] != null && place['cover_image'].toString().isNotEmpty) {
+      imageUrl = place['cover_image'];
+    } else if (place['logo_image'] != null && place['logo_image'].toString().isNotEmpty) {
+      imageUrl = place['logo_image'];
+    } else if (place['images'] != null && (place['images'] as List).isNotEmpty) {
+      imageUrl = (place['images'] as List).first;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
             decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header with close button
                 Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(8),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: primaryColor, size: 24),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 16),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                
+                // Image if available
+                if (imageUrl != null)
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: NetworkImage(MediaService.getFullUrl(imageUrl)),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    distance,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Type and distance
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              typeLabel,
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              distance,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Description
+                      if (description != null && description.isNotEmpty)
+                        Text(
+                          description,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      
+                      // Additional info
+                      if (place['address'] != null && place['address'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.location_on, color: primaryColor, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                place['address'].toString(),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      
+                      if (place['rating'] != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.star, color: primaryColor, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${place['rating']}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Type badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      typeLabel,
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Description
-                  Expanded(
-                    child: Text(
-                      description,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  
-                  // Additional info if available
-                  if (place['rating'] != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: primaryColor, size: 12),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${place['rating']}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildEmptyState({required IconData icon, required String message}) {
     return Container(
-      height: 100,
+      height: 60,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white54, size: 32),
-            const SizedBox(height: 8),
+            Icon(icon, color: Colors.white54, size: 20),
+            const SizedBox(width: 8),
             Text(
               message,
               style: const TextStyle(
                 color: Colors.white54,
                 fontSize: 14,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
