@@ -6,6 +6,7 @@ import '../../api/tour_package_api.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/config/env_config.dart';
 import './tour_package_detail.dart';
+import '../../../auth/api/auth_api.dart';
 
 class GuideLandingScreen extends StatefulWidget {
   const GuideLandingScreen({Key? key}) : super(key: key);
@@ -19,12 +20,14 @@ class _GuideLandingScreenState extends State<GuideLandingScreen> {
   List<TourPackage> _tourPackages = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _initializeService();
     _loadTourPackages();
+    _loadUserName();
   }
 
   void _initializeService() {
@@ -52,6 +55,13 @@ class _GuideLandingScreenState extends State<GuideLandingScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await AuthApi.getUserName();
+    setState(() {
+      _userName = name ?? '';
+    });
   }
 
   // Statistics calculations
@@ -142,9 +152,9 @@ class _GuideLandingScreenState extends State<GuideLandingScreen> {
                           style: TextStyle(color: Colors.grey[400], fontSize: 16),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'John Smith',
-                          style: TextStyle(
+                        Text(
+                          _userName ?? '',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
