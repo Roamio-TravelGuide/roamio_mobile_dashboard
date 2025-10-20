@@ -27,6 +27,45 @@ class TravelGuideApi {
     }
   }
 
+  Future<Map<String,dynamic>>getRevenueById(String id) async {
+    try {
+      final response = await apiClient.get('/payment/revenue/$id');
+      print(response.body);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load revenue data: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error in getRevenueById: $error'); 
+      return {
+        'success': false,
+        'message': error.toString(),
+        'data': null
+      };
+    }
+  }
+
+  Future<Map<String,dynamic>>getPaidPackagesById(String id) async {
+    try {
+      final response = await apiClient.get('/payment/showPaidPackages/$id');
+      print(response.body);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load paid packages data: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error in getPaidPackagesById: $error'); 
+      return {
+        'success': false,
+        'message': error.toString(),
+        'data': null
+      };
+    }
+  }
+
+
   // Future<Map<String, dynamic>> updateProfile(String userId, Map<String, dynamic> data) async {
   //   return await apiClient.put('/users/$userId', data);
   // }
