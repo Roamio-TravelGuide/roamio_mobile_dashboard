@@ -7,9 +7,30 @@ class MediaService {
       return mediaPath;
     }
     
-    // Remove any leading slashes to avoid double slashes
-    final cleanPath = mediaPath.startsWith('/') ? mediaPath.substring(1) : mediaPath;
-    return '$baseUrl/$cleanPath';
+    // Handle different path formats for images stored in public/uploads
+    String cleanPath = mediaPath;
+    
+    // Remove leading slash if present
+    if (cleanPath.startsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    }
+    
+    // The server serves files from /uploads route which maps to public/uploads directory
+    // So we need to construct URLs like: http://localhost:3001/uploads/filename
+    
+    if (cleanPath.startsWith('public/uploads/')) {
+      // Remove 'public/' prefix since server serves from /uploads
+      cleanPath = cleanPath.substring(7); // Remove 'public/'
+    } else if (cleanPath.startsWith('uploads/')) {
+      // Already has uploads/ prefix, keep as is
+    } else if (!cleanPath.startsWith('uploads/')) {
+      // Add uploads/ prefix for bare filenames or other paths
+      cleanPath = 'uploads/$cleanPath';
+    }
+    
+    final fullUrl = '$baseUrl/$cleanPath';
+    print('MediaService: Converting "$mediaPath" to "$fullUrl"');
+    return fullUrl;
   }
 
   static String getCoverImageUrl(String? mediaPath) {

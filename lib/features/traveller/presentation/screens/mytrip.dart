@@ -395,6 +395,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
           children: [
             _buildDestinationHeader(),
             _buildMapSection(),
+            _buildStopDetailsSection(),
             _buildAudioPlayer(),
             if (hasPurchased) _buildReviewsSection(),
             if (nearbyPlaces.isNotEmpty || isLoadingPlaces) _buildNearbyPlacesSection(),
@@ -438,6 +439,173 @@ class _MyTripScreenState extends State<MyTripScreen> {
         onMapTap: () {
           print('MyTrip: Map tapped');
         },
+      ),
+    );
+  }
+
+  Widget _buildStopDetailsSection() {
+    if (tourStops.isEmpty || currentStopIndex >= tourStops.length) {
+      return const SizedBox.shrink();
+    }
+
+    final currentStop = tourStops[currentStopIndex];
+    final description = currentStop['description'];
+    final hasDescription = description != null && 
+                          description.toString().trim().isNotEmpty && 
+                          description.toString().trim().toLowerCase() != 'null';
+    
+    // Get stop image from media array
+    String? stopImageUrl;
+    if (currentStop['media'] != null && (currentStop['media'] as List).isNotEmpty) {
+      final mediaList = currentStop['media'] as List;
+      final imageMedia = mediaList.firstWhere(
+        (media) => media['media_type'] == 'image',
+        orElse: () => null,
+      );
+      
+      if (imageMedia != null && imageMedia['url'] != null && imageMedia['url'].isNotEmpty) {
+        stopImageUrl = MediaService.getFullUrl(imageMedia['url']);
+      }
+    }
+
+    // Show the section if there's an image, even without description
+    if (!hasDescription && stopImageUrl == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section title
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: Colors.blue,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'About this Stop',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          
+          if (stopImageUrl != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                minHeight: 200,
+                maxHeight: 400,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade800,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  stopImageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.fitWidth,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: double.infinity,
+                    height: 200,
+                    color: Colors.grey.shade800,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  print('Stop image failed to load: $error');
+                  print('Stop image URL: $stopImageUrl');
+                  // Use fallback image when server image fails
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=300&fit=crop',
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Final fallback to container
+                        return Container(
+                          width: double.infinity,
+                          height: 200,
+                          color: Colors.grey.shade700,
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.white54,
+                                  size: 50,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Image not available',
+                                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          ],
+          
+          if (hasDescription) ...[
+            const SizedBox(height: 16),
+            Text(
+              description.toString(),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ] else if (stopImageUrl != null) ...[
+            // Show a message when there's an image but no description
+            const SizedBox(height: 16),
+            Text(
+              'Enjoy the beautiful scenery at this stop. Listen to the audio guide for more information about this location.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 14,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
