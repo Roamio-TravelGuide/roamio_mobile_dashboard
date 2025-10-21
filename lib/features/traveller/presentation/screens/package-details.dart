@@ -7,6 +7,7 @@ import 'gallery_page.dart';
 import 'mytrip.dart';
 import '../../../../core/services/mapbox_service.dart';
 import '../../../../core/services/media_service.dart';
+import '../../../../core/services/payment_verification_service.dart';
 import '../../../../core/widgets/audio_player_widget.dart';
 import '../../api/dashboard_api.dart';
 import '../../api/traveller_api.dart';
@@ -63,23 +64,36 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   Future<void> _checkPurchaseStatus() async {
+    print('PackageDetails: Checking purchase status...');
+
     if (widget.isFromMyTrips == true) {
-      setState(() {
-        hasPurchased = true;
-      });
-      return;
+      hasPurchased = true;
+      print('PackageDetails: This is explicitly marked as from MyTrips - granting full access');
+    } else if (widget.package != null) {
+      final packageIdRaw = widget.package!['id'];
+      final packageId = packageIdRaw?.toString();
+      if (packageId != null) {
+        print('PackageDetails: Checking payment status for package ID: $packageId');
+        try {
+          final accessLevel = await PaymentVerificationService.getPackageAccessLevel(packageId);
+          hasPurchased = accessLevel == PackageAccessLevel.fullAccess;
+          print('PackageDetails: Payment verification result - Access Level: $accessLevel, hasPurchased: $hasPurchased');
+        } catch (e) {
+          print('PackageDetails: Error checking payment status: $e');
+          hasPurchased = false;
+        }
+      } else {
+        hasPurchased = false;
+        print('PackageDetails: No package ID available');
+      }
+    } else {
+      hasPurchased = true;
+      print('PackageDetails: No package provided, assuming paid access');
     }
 
-    try {
-      final purchased = await _hasUserPurchasedPackage();
-      setState(() {
-        hasPurchased = purchased;
-      });
-    } catch (e) {
-      print('PackageDetails: Error checking purchase status: $e');
-      setState(() {
-        hasPurchased = false;
-      });
+    // Ensure state is updated
+    if (mounted) {
+      setState(() {});
     }
   }
 

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../config/env_config.dart';
 import '../utils/storage_helper.dart';
@@ -9,34 +11,68 @@ class PaymentVerificationService {
   /// Check if user has paid for a specific package
   static Future<bool> hasUserPaidForPackage(String packageId) async {
     try {
-      // Get current user ID
-      final userId = await StorageHelper.getUserId();
+      String? userId;
+
+      // 1️⃣ Try secure storage first
+      userId = await StorageHelper.getUserId();
+
+      // 2️⃣ Try SharedPreferences
       if (userId == null) {
-        print('PaymentVerificationService: No user ID found');
+        final prefs = await SharedPreferences.getInstance();
+        final keysToCheck = ['user_id', 'userId'];
+
+        for (final key in keysToCheck) {
+          final storedValue = prefs.get(key); // can be int or String
+          if (storedValue != null) {
+            userId = storedValue.toString(); // convert int to String safely
+            print('PaymentVerificationService: Using user ID from SharedPreferences ($key): $userId');
+            break;
+          }
+        }
+      }
+
+      if (userId == null) {
+        print('PaymentVerificationService: No user ID found in storage');
         return false;
       }
 
       print('PaymentVerificationService: Checking payment for package $packageId, user $userId');
+      return await _checkPaymentStatus(packageId, userId);
+    } catch (e) {
+      print('PaymentVerificationService: Error checking payment status: $e');
+      return false;
+    }
+  }
 
-      // Call the payment status API
+  /// Private method to call API and verify payment
+  static Future<bool> _checkPaymentStatus(String packageId, String userId) async {
+    try {
+      // ✅ Corrected endpoint: removed duplicate /api/v1
       final response = await _apiClient.get(
-        '/api/v1/packages/$packageId/payment-status',
+        '/packages/$packageId/payment-status',
         queryParameters: {'userId': userId},
       );
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
-        if (responseBody['success'] == true && responseBody['data'] != null) {
-          final hasPaid = responseBody['data']['hasPaid'] ?? false;
-          print('PaymentVerificationService: Payment status result - hasPaid: $hasPaid');
-          return hasPaid;
+        final data = responseBody['data'];
+
+        if (data != null) {
+          // Handle multiple possible fields for status
+          if (data.containsKey('hasPaid')) {
+            return data['hasPaid'] ?? false;
+          } else if (data.containsKey('status')) {
+            final status = data['status']?.toString().toLowerCase();
+            return status == 'completed' || status == 'paid';
+          } else if (data.containsKey('paymentStatus')) {
+            final status = data['paymentStatus']?.toString().toLowerCase();
+            return status == 'completed' || status == 'paid';
+          }
         }
       }
-
-      print('PaymentVerificationService: API call failed or returned invalid response');
       return false;
     } catch (e) {
-      print('PaymentVerificationService: Error checking payment status: $e');
+      print('PaymentVerificationService: Error during payment API call: $e');
       return false;
     }
   }
@@ -48,7 +84,7 @@ class PaymentVerificationService {
       if (userId == null) return null;
 
       final response = await _apiClient.get(
-        '/api/v1/packages/$packageId/payment-status',
+        '/packages/$packageId/payment-status',
         queryParameters: {'userId': userId},
       );
 
@@ -69,7 +105,7 @@ class PaymentVerificationService {
   static Future<PackageAccessLevel> getPackageAccessLevel(String packageId) async {
     try {
       final hasPaid = await hasUserPaidForPackage(packageId);
-      
+
       if (hasPaid) {
         return PackageAccessLevel.fullAccess;
       } else {
@@ -85,7 +121,7 @@ class PaymentVerificationService {
   static Future<bool> canAccessStop(String packageId, int stopIndex) async {
     try {
       final accessLevel = await getPackageAccessLevel(packageId);
-      
+
       switch (accessLevel) {
         case PackageAccessLevel.fullAccess:
           return true;
@@ -105,7 +141,7 @@ class PaymentVerificationService {
   static Future<int> getMaxAccessibleStops(String packageId) async {
     try {
       final accessLevel = await getPackageAccessLevel(packageId);
-      
+
       switch (accessLevel) {
         case PackageAccessLevel.fullAccess:
           return -1; // -1 means unlimited access

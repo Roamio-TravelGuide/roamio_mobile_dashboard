@@ -282,6 +282,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final coverImageUrl =
         package['cover_image']?['url'] ??
+        package['cover_image'] ??
         'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop';
     final packageTitle = package['title'] ?? 'Tour Package';
 

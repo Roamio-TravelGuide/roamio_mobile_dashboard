@@ -8,6 +8,7 @@ import '../../../../core/widgets/tour_route_map.dart';
 import '../../../../core/models/tour_package.dart';
 import 'package_checkout.dart';
 import '../../api/dashboard_api.dart';
+import '../../api/traveller_api.dart';
 import '../../../../core/utils/storage_helper.dart';
 import '../../../../core/services/payment_verification_service.dart';
 import '../../../../core/config/env_config.dart';
@@ -1095,20 +1096,34 @@ class _MyTripScreenState extends State<MyTripScreen> {
     setState(() => _isAddingReview = true);
 
     try {
-      // TODO: Implement review submission API call
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Review submitted successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      final travellerApi = TravellerApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
+
+      final packageId = widget.package?['id'];
+      if (packageId == null) {
+        throw Exception('Package ID is required');
+      }
+
+      final response = await travellerApi.createReview(
+        packageId: packageId is String ? int.parse(packageId) : packageId as int,
+        rating: _selectedRating,
+        comments: _reviewController.text.trim().isNotEmpty ? _reviewController.text.trim() : null,
       );
-      
-      setState(() {
-        _selectedRating = 0;
-        _reviewController.clear();
-      });
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Review submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        setState(() {
+          _selectedRating = 0;
+          _reviewController.clear();
+        });
+      } else {
+        throw Exception(response['message'] ?? 'Failed to submit review');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
