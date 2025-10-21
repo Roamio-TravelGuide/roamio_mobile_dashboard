@@ -46,6 +46,10 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   void initState() {
     super.initState();
     print('PackageDetails: initState called with package data: ${widget.package}');
+    print('PackageDetails: Number of tour stops: ${stopTitles.length}');
+    for (int i = 0; i < stopTitles.length; i++) {
+      print('PackageDetails: Stop $i data: ${stopTitles[i]}');
+    }
     dashboardApi = DashboardApi(apiClient: ApiClient(customBaseUrl: EnvConfig.baseUrl));
     audioPlayer = AudioPlayer();
     
@@ -104,8 +108,36 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   String get heroImage {
-    final imageUrl = widget.package?['cover_image']?['url'] ?? 'https://via.placeholder.com/400x250.png?text=No+Image';
-    return imageUrl;
+    print('Getting hero image for package: ${widget.package?.keys.toList()}');
+    
+    // Try cover_image first
+    if (widget.package?['cover_image'] != null) {
+      String? coverImageUrl;
+      
+      if (widget.package!['cover_image'] is String) {
+        coverImageUrl = widget.package!['cover_image'];
+      } else if (widget.package!['cover_image'] is Map && widget.package!['cover_image']['url'] != null) {
+        coverImageUrl = widget.package!['cover_image']['url'];
+      }
+      
+      if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
+        final url = MediaService.getFullUrl(coverImageUrl);
+        print('Hero image from cover_image: $url');
+        return url;
+      }
+    }
+    
+    // Fallback to first stop image if cover image is not available
+    if (stopTitles.isNotEmpty) {
+      final firstStopImage = _getStopImageUrl(stopTitles[0]);
+      if (!firstStopImage.contains('placeholder')) {
+        print('Hero image from first stop: $firstStopImage');
+        return firstStopImage;
+      }
+    }
+    
+    print('Using fallback for hero image');
+    return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop';
   }
 
   @override
@@ -131,12 +163,12 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     return SliverAppBar(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       pinned: true,
-      expandedHeight: 280,
+      expandedHeight: 320, // Increased height for better image visibility
       elevation: 0,
       automaticallyImplyLeading: false,
       leadingWidth: 0,
       flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.pin,
+        collapseMode: CollapseMode.parallax, // Changed to parallax for better effect
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -150,26 +182,65 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   Widget _buildHeroImage() {
-    return Image.network(
-      MediaService.getFullUrl(heroImage),
-      fit: BoxFit.cover,
-      alignment: Alignment.topCenter,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: Colors.grey.shade800,
-          child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
-            ),
-          ),
-        );
-      },
-      errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade700),
+    return Positioned.fill(
+      child: ClipRect(
+        child: Image.network(
+          heroImage,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              color: Colors.grey.shade800,
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading hero image: $error');
+            print('Hero image URL: $heroImage');
+            // Try fallback image instead of showing error container
+            return ClipRect(
+              child: Image.network(
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (context, error, stackTrace) {
+                  // Final fallback to container
+                  return Container(
+                    color: Colors.grey.shade700,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            color: Colors.white54,
+                            size: 50,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Image not available',
+                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -234,6 +305,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   Widget _buildGallerySection() {
+    print('Building gallery section with ${stopTitles.length} stops');
     return Column(
       children: [
         _SectionHeader(
@@ -242,21 +314,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
           onAction: () {
             final availableStops = hasPurchased ?? false ? stopTitles : stopTitles.take(1).toList();
             final galleryItems = availableStops.map((stop) {
-              String imageUrl = 'https://via.placeholder.com/400x250.png?text=No+Image';
-
-              if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
-                final imageMedia = (stop['media'] as List).firstWhere(
-                  (media) => media['media_type'] == 'image',
-                  orElse: () => null,
-                );
-                if (imageMedia != null) {
-                  final url = imageMedia['url'];
-                  if (url != null && url.isNotEmpty) {
-                    imageUrl = MediaService.getFullUrl(url);
-                  }
-                }
-              }
-
+              final imageUrl = _getStopImageUrl(stop);
               return {
                 'image': imageUrl,
                 'title': stop['stop_name'] ?? 'Stop'
@@ -266,7 +324,7 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => GalleryPage(
-                  title: 'Gallery',
+                  title: 'Package Gallery',
                   galleryItems: galleryItems,
                 ),
               ),
@@ -275,30 +333,73 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 86,
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: (hasPurchased ?? false) ? stopTitles.length : stopTitles.take(1).toList().length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemCount: (hasPurchased ?? false) ? stopTitles.length : 1,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final stop = stopTitles[index];
-              String imageUrl = 'https://via.placeholder.com/400x250.png?text=No+Image';
+              final imageUrl = _getStopImageUrl(stop);
+              final stopName = stop['stop_name'] ?? 'Stop ${index + 1}';
 
-              if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
-                final imageMedia = (stop['media'] as List).firstWhere(
-                  (media) => media['media_type'] == 'image',
-                  orElse: () => null,
-                );
-                if (imageMedia != null) {
-                  final url = imageMedia['url'];
-                  if (url != null && url.isNotEmpty) {
-                    imageUrl = MediaService.getFullUrl(url);
+              return GestureDetector(
+                onTap: () {
+                  if ((hasPurchased ?? false) || index == 0) {
+                    _showFullScreenImage(context, imageUrl, stopName);
+                  } else {
+                    _showBuyTourDialog(context, widget.package);
                   }
-                }
-              }
-
-              return _GalleryThumb(url: imageUrl);
+                },
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        width: 100,
+                        child: Stack(
+                          children: [
+                            _GalleryThumb(url: imageUrl),
+                            if ((hasPurchased == null || hasPurchased == false) && index > 0)
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.lock,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        stopName,
+                        style: TextStyle(
+                          color: (hasPurchased == null || hasPurchased == false) && index > 0 
+                            ? Colors.white38 
+                            : Colors.white70,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ),
@@ -307,6 +408,11 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
   }
 
   Widget _buildTripStopsSection() {
+    print('Building trip stops section with ${stopTitles.length} stops');
+    for (int i = 0; i < stopTitles.length; i++) {
+      print('Stop $i: ${stopTitles[i]}');
+    }
+    
     return Column(
       children: [
         Padding(
@@ -327,13 +433,16 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
               final stop = stopTitles[index];
               final isPreviewLimited = !(hasPurchased ?? false) && index > 0;
               final showPreviewBadge = (hasPurchased == null || hasPurchased == false) && index <= 0;
+              final imageUrl = _getStopImageUrl(stop);
+              
+              print('Building audio card for stop $index with image: $imageUrl');
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _AudioCard(
                   title: stop['stop_name'] ?? 'Stop ${index + 1}',
                   description: stop['description'] ?? 'No description available.',
-                  image: 'https://via.placeholder.com/400x250.png?text=Stop+${index + 1}',
+                  image: imageUrl, // Use our image URL method
                   index: index,
                   onPlayAudio: () => _onPlayAudio(index),
                   onShowDirections: () => _onShowDirections(index), // Pass the correct index
@@ -675,6 +784,72 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     }
   }
 
+  String _getStopImageUrl(Map<String, dynamic> stop) {
+    print('Getting image URL for stop: ${stop.keys.toList()}');
+    
+    String? rawUrl;
+    
+    // First try to get image from media array
+    if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
+      final mediaList = stop['media'] as List;
+      print('Found media array with ${mediaList.length} items');
+      
+      final imageMedia = mediaList.firstWhere(
+        (media) => media['media_type'] == 'image',
+        orElse: () => null,
+      );
+      
+      if (imageMedia != null && imageMedia['url'] != null && imageMedia['url'].isNotEmpty) {
+        rawUrl = imageMedia['url'];
+        print('Found image in media array: $rawUrl');
+      }
+    }
+
+    // Try different possible image field names if media array didn't work
+    if (rawUrl == null) {
+      final possibleFields = ['image_url', 'imageUrl', 'image', 'picture_url', 'pictureUrl', 'photo', 'thumbnail'];
+      for (final field in possibleFields) {
+        if (stop[field] != null && stop[field].toString().isNotEmpty) {
+          rawUrl = stop[field].toString();
+          print('Found image in field "$field": $rawUrl');
+          break;
+        }
+      }
+    }
+
+    // Fallback to cover_image if available
+    if (rawUrl == null && stop['cover_image'] != null) {
+      if (stop['cover_image'] is String && stop['cover_image'].isNotEmpty) {
+        rawUrl = stop['cover_image'];
+        print('Found image in cover_image string: $rawUrl');
+      } else if (stop['cover_image'] is Map && stop['cover_image']['url'] != null) {
+        rawUrl = stop['cover_image']['url'];
+        print('Found image in cover_image object: $rawUrl');
+      }
+    }
+
+    // If we found a URL, construct the proper URL
+    if (rawUrl != null && rawUrl.isNotEmpty) {
+      final finalUrl = MediaService.getFullUrl(rawUrl);
+      print('Final image URL: $finalUrl');
+      print('DEBUG: Testing URL accessibility for: $finalUrl');
+      return finalUrl;
+    }
+
+    // Only use fallback when no image URL is found at all
+    print('No image found for stop, using fallback image');
+    final fallbackImages = [
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&h=250&fit=crop',
+    ];
+    
+    final stopName = stop['stop_name'] ?? 'Stop';
+    final imageIndex = stopName.hashCode.abs() % fallbackImages.length;
+    return fallbackImages[imageIndex];
+  }
+
   String _getAudioUrlForStop(Map<String, dynamic> stop) {
     if (stop['media'] != null && (stop['media'] as List).isNotEmpty) {
       final audioMedia = (stop['media'] as List).firstWhere(
@@ -702,6 +877,83 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     return '';
   }
 
+  void _showFullScreenImage(BuildContext context, String imageUrl, String title) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 3.0,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white54,
+                        size: 100,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: MediaQuery.of(context).padding.bottom + 16,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _testDialog() {
     _showBuyTourDialog(context, widget.package);
   }
@@ -710,6 +962,15 @@ class _DestinationDetailsPageState extends State<DestinationDetailsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('All reviews page coming soon!')),
     );
+  }
+
+  void _testImageUrl(String url) async {
+    try {
+      print('Testing image URL: $url');
+      // This will trigger the image loading and we can see errors in the console
+    } catch (e) {
+      print('Error testing image URL: $e');
+    }
   }
 }
 
@@ -1126,12 +1387,50 @@ class _AudioCard extends StatelessWidget {
                     child: SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 1.5),
+                      child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white),
                     ),
                   ),
                 );
               },
-              errorBuilder: (_, __, ___) => Container(width: 60, height: 60, color: Colors.grey.shade700),
+              errorBuilder: (context, error, stackTrace) {
+                print('AudioCard image error for URL "$image": $error');
+                print('Attempting fallback image for audio card');
+                
+                // Try fallback scenic image
+                final fallbackImages = [
+                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=120&h=120&fit=crop',
+                  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=120&h=120&fit=crop',
+                  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=120&h=120&fit=crop',
+                  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=120&h=120&fit=crop',
+                ];
+                
+                final fallbackIndex = image.hashCode.abs() % fallbackImages.length;
+                
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    fallbackImages[fallbackIndex],
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Final fallback to icon
+                      return Container(
+                        width: 60, 
+                        height: 60, 
+                        color: Colors.grey.shade700,
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.white54,
+                            size: 20,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -1226,23 +1525,59 @@ class _GalleryThumb extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: AspectRatio(
         aspectRatio: 1,
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: Colors.white10,
-              child: const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.white10,
+                child: const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
-            );
-          },
-          errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade700),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading gallery thumb: $error for URL: $url');
+              return Container(
+                color: Colors.grey.shade700,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'No Image',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
